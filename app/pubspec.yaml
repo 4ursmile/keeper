@@ -94,8 +94,12 @@ flutter:
   assets:
     - assets/icons/
     - assets/
-    - assets/icons/images/
+
+
     - packages/flutter_google_places_hoc081098/assets/google_white.png
+
+    - assets/images/
+
     - .env
   #   - images/a_dot_ham.jpeg
 

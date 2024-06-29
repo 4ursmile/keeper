@@ -70,20 +70,14 @@ class PostWidget extends StatelessWidget {
     return Align(
       alignment: Alignment.center,
       child: Container(
-          margin: EdgeInsets.only(top: 20),
-          height: 350,
-          width: 350,
+          
+          height: 310,
+          width: 400,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(30.0),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 5.0,
-                spreadRadius: 1,
-                offset: Offset(0, 4),
-              ),
-            ],
+            
+            
+            
           ),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,8 +87,8 @@ class PostWidget extends StatelessWidget {
                   child: Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: Colors.greenAccent[400],
                         radius: 25,
+                        backgroundImage: AssetImage('assets/images/default_profile.png'),
                         //Text
                       ),
                       const SizedBox(width: 20),
@@ -106,10 +100,14 @@ class PostWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
-                Placeholder(fallbackHeight: 170),
                 const SizedBox(height: 10),
-                const Divider(height: 20, indent: 20, endIndent: 20),
+                Image.asset(
+                  'assets/images/default_post_img.png',
+                  fit: BoxFit.cover,
+                  height: 160,
+                  width: double.infinity,
+                ),
+                const SizedBox(height: 10),
                 ButtonRow(),
               ])),
     );

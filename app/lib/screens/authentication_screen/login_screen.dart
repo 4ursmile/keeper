@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 250,
                 child: Center(
                   child: FadeInUp(
-                    duration: Duration(milliseconds: 1500),
+                    duration: Duration(milliseconds: 800),
                     child: Text(
                       "Login",
                       style: TextStyle(
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: <Widget>[
                     FadeInUp(
-                      duration: Duration(milliseconds: 1800),
+                      duration: Duration(milliseconds: 800),
                       child: Container(
                         padding: EdgeInsets.all(5),
                         decoration: BoxDecoration(
@@ -121,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: 30),
                     FadeInUp(
-                      duration: Duration(milliseconds: 1900),
+                      duration: Duration(milliseconds: 800),
                       child: GestureDetector(
                         onTap: _login,
                         child: Container(
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: 70),
                     FadeInUp(
-                      duration: Duration(milliseconds: 2000),
+                      duration: Duration(milliseconds: 800),
                       child: Text(
                         "Forgot Password?",
                         style: TextStyle(color: AppColors.primaryColor),
