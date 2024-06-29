@@ -18,16 +18,19 @@ import 'package:google_api_headers/google_api_headers.dart';
 import 'package:aws_common/aws_common.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 
+import 'package:flutter_application_1/screens/input_component.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
+
 import '../../../models/location.dart';
 import '../../../models/task.dart';
 import '../../confirm_screen/confirm_screen.dart';
-import '../../temp2.dart';
 
+import '../../temp2.dart';
 
 final String accessKey = dotenv.env["AWS_ACCESS_KEY_ID"]!;
 final String accessSecret = dotenv.env["AWS_SECRET_ACCESS_KEY"]!;
@@ -124,7 +127,6 @@ class _SimpleTaskState extends State<SimpleTask> {
       _onChange();
     });
     geocoder = geo.FlGeocoder(dotenv.env["MAP_API_KEY"]!);
-
   }
 
   _onChange() {
@@ -188,7 +190,7 @@ class _SimpleTaskState extends State<SimpleTask> {
 
   //get user current location
   getUserLocation() async {
-    print ('--> Get Location');
+    print('--> Get Location');
     var isEnable = await checkPermission();
     print('--> Granted');
     if (isEnable) {
@@ -212,8 +214,7 @@ class _SimpleTaskState extends State<SimpleTask> {
       // }
       final coordinates = geo.Location(location.latitude, location.longitude);
       try {
-        final results =
-        await geocoder.findAddressesFromLocationCoordinates(
+        final results = await geocoder.findAddressesFromLocationCoordinates(
           location: coordinates,
           useDefaultResultTypeFilter: false,
           // resultType: 'route', // Optional. For custom filter.
@@ -246,8 +247,7 @@ class _SimpleTaskState extends State<SimpleTask> {
       //     content: Text(message!),
       //   ),
       // );
-      setState(() {
-      });
+      setState(() {});
     } else {
       setState(() {
         result = "Permission is not allow";
@@ -257,10 +257,21 @@ class _SimpleTaskState extends State<SimpleTask> {
 
   Widget displayLocation() {
     return Container(
-      padding: EdgeInsets.all(8),
-      child:
-        Text(message ?? 'Nothing',  style: TextStyle(fontSize: 15),),
-
+      padding:
+          EdgeInsets.only(left: 40.0, right: 40.0, top: 10.0, bottom: 10.0),
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: AppColors.primaryColor, // Border color
+          ),
+          borderRadius: BorderRadius.circular(8.0), // Border radius
+        ),
+        child: Text(
+          message ?? 'Nothing',
+          style: TextStyle(fontSize: 15),
+        ), // Custom hint text
+      ),
     );
   }
 
@@ -344,7 +355,7 @@ class _SimpleTaskState extends State<SimpleTask> {
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
             images.isNotEmpty
                 ? Container(
                     height: 100,
@@ -365,7 +376,7 @@ class _SimpleTaskState extends State<SimpleTask> {
                     ),
                   )
                 : const SizedBox(height: 0, width: 0),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
             Column(
               children: [
                 Padding(
@@ -381,9 +392,13 @@ class _SimpleTaskState extends State<SimpleTask> {
                     ),
                   ),
                 ),
-                Container(width: 300, height: 100, child: TextField()),
+                Container(
+                    width: 310,
+                    height: 100,
+                    child: CustomInput(hintText: 'Input the description...'))
               ],
             ),
+            const SizedBox(height: 30),
             Column(
               children: [
                 const Padding(
@@ -473,7 +488,6 @@ class _SimpleTaskState extends State<SimpleTask> {
                           ),
                         ],
                       ),
-
                     ],
                   ),
                 ),
@@ -482,7 +496,7 @@ class _SimpleTaskState extends State<SimpleTask> {
                 //   onPressed: _handlePressButton,
                 //   child: const Text('Search places'),
                 // ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 50),
               ],
             ),
             Column(
@@ -500,9 +514,14 @@ class _SimpleTaskState extends State<SimpleTask> {
                     ),
                   ),
                 ),
-                Container(width: 300, height: 100, child: TextField()),
+                Container(
+                    width: 310,
+                    height: 50,
+                    child:
+                        CustomInput(hintText: 'Input the number of takers...'))
               ],
             ),
+            const SizedBox(height: 30),
             Column(
               children: [
                 SizedBox(
@@ -562,8 +581,8 @@ class _SimpleTaskState extends State<SimpleTask> {
       apiKey: dotenv.env['MAP_API_KEY']!,
       onError: onError,
       mode: Mode.overlay,
-      language: 'fr',
-      components: [const Component(Component.country, 'fr')],
+      language: 'vi',
+      components: [const Component(Component.country, 'vi')],
       resultTextStyle: Theme.of(context).textTheme.titleMedium,
     );
     if (!mounted) {
@@ -589,9 +608,7 @@ class _SimpleTaskState extends State<SimpleTask> {
     final lat = geometry.location.lat;
     final lng = geometry.location.lng;
     message = p.description;
-    setState(() {
-
-    });
+    setState(() {});
     // messengerState.showSnackBar(
     //   SnackBar(
     //     content: Text('${p.description} - $lat/$lng'),

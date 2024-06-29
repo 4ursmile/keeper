@@ -1,7 +1,9 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-
-import '../../constants/colors.dart';
+import 'package:flutter_application_1/constants/colors.dart';
+import 'package:flutter_application_1/screens/authentication_screen/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,6 +13,20 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final _storage = const FlutterSecureStorage();
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('email');
+    await _storage.delete(key: 'password');
+
+    // Navigate to the LoginScreen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,15 +37,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             CircleAvatar(
               radius: 70,
-              backgroundColor:Colors.green,
+              backgroundImage: AssetImage('assets/images/default_profile.png'),
             ),
             Padding(
               padding: EdgeInsets.only(top: 18),
-              child: Text('User', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+              child: Text('Username', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
             ),
             Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text('20 points', style: TextStyle(fontSize: 20)),
+              child: Text('20000 points', style: TextStyle(fontSize: 20)),
             ),
             Padding(
               padding: EdgeInsets.only(top: 18),
@@ -51,8 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: FadeInUp(
                   duration: Duration(milliseconds: 1500),
                   child: ElevatedButton(
-                    onPressed: () {
-                    },
+                    onPressed: _logout,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
                     ),
@@ -67,28 +82,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             )
-          ]
+          ],
         ),
-      )
+      ),
     );
   }
 
-  Widget _taskWidget({required text}) {
+  Widget _taskWidget({required String text}) {
     return Container(
-        height: 50,
-        width: 150,
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 3.0,
-                spreadRadius: 1,
-                offset: Offset(0, 3),
-              ),
-            ]
-        ),
-        child: Center(child: Text(text, style: TextStyle(fontSize: 20))));
+      height: 50,
+      width: 150,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primaryColor, width: 0.5),
+      ),
+      child: Center(child: Text(text, style: TextStyle(fontSize: 20))),
+    );
   }
 }
