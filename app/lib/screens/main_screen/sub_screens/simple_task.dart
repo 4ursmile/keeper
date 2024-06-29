@@ -15,8 +15,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 // For S3 bucket
-String ACCESS_KEY = dotenv.env['AWS_ACCESS_KEY_ID']!;
-String ACCESS_SECRET = dotenv.env['AWS_SECRET_ACCESS_KEY']!;
+String ACCESS_KEY = dotenv.env["AWS_ACCESS_KEY_ID"]!;
+String ACCESS_SECRET = dotenv.env["AWS_SECRET_ACCESS_KEY"]!;
 const String region = 'ap-southeast-1';
 const String bucketName = 'keeper-storage';
 const String folderName = 'img';

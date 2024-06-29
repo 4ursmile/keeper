@@ -3,8 +3,10 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:ui';
 
+import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
@@ -220,6 +222,9 @@ class MapScreen extends StatefulWidget {
 //   }
 // }
 class _MapScreenState extends State<MapScreen> {
+
+  CustomInfoWindowController _customInfoWindowController =
+  CustomInfoWindowController();
   Location _locationController = Location();
   static const LatLng _pGooglePlex = LatLng(37.4223, -122.0090);
   static const LatLng _pApplePark = LatLng(37.3346, -122.4434);
@@ -245,6 +250,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _markersStreamController.close();
+    _customInfoWindowController.dispose();
     super.dispose();
   }
 
@@ -317,9 +323,77 @@ class _MapScreenState extends State<MapScreen> {
         position: _latLang[i],
         icon: BitmapDescriptor.fromBytes(resizedMarkerImageBytes),
         anchor: Offset(.1, .1),
-        infoWindow: InfoWindow(title: 'This is title marker: ' + i.toString()),
+        // infoWindow: InfoWindow(title: 'This is title marker: ' + i.toString(),),
         onTap: () {
           _drawPolyline(_latLang[i]);
+          _customInfoWindowController.addInfoWindow!(
+              Container(
+                width: 300,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children:  [
+                    Container(
+                      width: 300,
+                      height: 100,
+                      decoration: const BoxDecoration(
+                        image:  DecorationImage(
+                            image: NetworkImage('https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg?cs=srgb&dl=pexels-narda-yescas-1566837.jpg&fm=jpg'),
+                            fit: BoxFit.fitWidth,
+                            filterQuality: FilterQuality.high),
+                        borderRadius:  BorderRadius.all(
+                          Radius.circular(10.0),
+                        ),
+                        color: Colors.red,
+                      ),
+                    ),
+                    const   Padding(
+                      padding:  EdgeInsets.only(top: 10 , left: 10 , right: 10),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 100,
+                            child: Text(
+                              'Beef Tacos',
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              softWrap: false,
+                              style: TextStyle(color: Colors.black),
+                            ),
+                          ),
+                          Spacer(),
+                          Text(
+                            '.3 mi.',
+                            style: TextStyle(color: Colors.black),
+
+                          )
+                        ],
+                      ),
+                    ),
+                    const  Padding(
+                      padding:  EdgeInsets.only(top: 10 , left: 10 , right: 10),
+                      child: Text(
+                        'Help me finish these tacos! I got a platter from Costco and it’s too much.',
+                        maxLines: 2,
+                        style: TextStyle(color: Colors.black),
+
+                      ),
+                    ),
+
+                  ],
+                ),
+              ),
+              LatLng(_latLang[i].latitude, _latLang[i].longitude)
+          );
+          setState(() {
+
+          });
         },
       ));
       _markersStreamController.add(_markers);
@@ -340,29 +414,46 @@ class _MapScreenState extends State<MapScreen> {
           } else if (!snapshot.hasData) {
             return const Center(child: Text('No data available'));
           } else {
-            return GoogleMap(
-              myLocationButtonEnabled: true,
-              myLocationEnabled: true,
-              onMapCreated: (GoogleMapController controller) async {
-                _mapController.complete(controller);
-                _mapController.future.then((value) {
-                  value.setMapStyle(_mapStyle);
-                });
-              },
-              initialCameraPosition: CameraPosition(target: _pGooglePlex, zoom: 13),
-              markers: Set<Marker>.of(snapshot.data!),
-              polylines: Set<Polyline>.of(_polylines),
-              circles: _currentP != null
-                  ? {
-                Circle(
-                  circleId: CircleId("1"),
-                  center: LatLng(_currentP!.latitude, _currentP!.longitude),
-                  radius: 430,
-                  strokeWidth: 2,
-                  fillColor: Color(0xff006491).withOpacity(0.2),
+            return Stack(
+              children: [
+                GoogleMap(
+                  onTap: (position) {
+                    _customInfoWindowController.hideInfoWindow!();
+                  },
+                  onCameraMove: (position) {
+                    _customInfoWindowController.onCameraMove!();
+                  },
+                  myLocationButtonEnabled: true,
+                  myLocationEnabled: true,
+                  onMapCreated: (GoogleMapController controller) async {
+                    _customInfoWindowController.googleMapController = controller;
+                    _mapController.complete(controller);
+                    _mapController.future.then((value) {
+                      value.setMapStyle(_mapStyle);
+                    });
+                  },
+                  initialCameraPosition: CameraPosition(target: _pGooglePlex, zoom: 13),
+                  markers: Set<Marker>.of(snapshot.data!),
+                  polylines: Set<Polyline>.of(_polylines),
+                  circles: _currentP != null
+                      ? {
+                    Circle(
+                      circleId: CircleId("1"),
+                      center: LatLng(_currentP!.latitude, _currentP!.longitude),
+                      radius: 430,
+                      strokeWidth: 2,
+                      fillColor: Color(0xff006491).withOpacity(0.2),
+                    ),
+                  }
+                      : {},
                 ),
-              }
-                  : {},
+                CustomInfoWindow(
+                  controller: _customInfoWindowController,
+                  height: 200,
+                  width: 300,
+                  offset: 35,
+                ),
+              ],
             );
           }
         },
@@ -438,7 +529,7 @@ class _MapScreenState extends State<MapScreen> {
     List<LatLng> polylineCoordinates = [];
     PolylinePoints polylinePoints = PolylinePoints();
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      googleApiKey: 'AIzaSyDvjZL5tOtbI9aMH6D4QQ4jeji7-DSNV9M',
+      googleApiKey: dotenv.env["MAP_API_KEY"],
       request: PolylineRequest(
         origin: PointLatLng(_currentP!.latitude, _currentP!.longitude),
         destination: PointLatLng(markerPosition.latitude, markerPosition.longitude),
