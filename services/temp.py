@@ -1,6 +1,6 @@
 from typing import List, Optional
 from typing_extensions import Annotated
-from fastapi import FastAPI, HTTPException, Path, Depends, Body, File, UploadFile
+from fastapi import FastAPI, HTTPException, Path, Depends, Body, File, UploadFile, BackgroundTasks
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -11,6 +11,7 @@ import urllib.parse
 import dtdef as dt
 import os
 import queue
+import asyncio
 
 class ReviewCreate(BaseModel):
     rate: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
@@ -257,14 +258,14 @@ class QueueItem(BaseModel):
     latitude: float
 
 
-user_queue = []
+taker_queue = []
 
 
 @app.put("/users/{user_id}/status", response_description="Update user status")
 async def update_user_status(user_id:int, status: bool, receiver_id: int, item: QueueItem=Body(...)):
-    global user_queue  # Make user_queue global to access and modify it
+    global taker_queue  # Make taker_queue global to access and modify it
     giver_user = await db["users"].find_one({"id": receiver_id})
-    for user_details in user_queue:
+    for user_details in taker_queue:
         if user_details["userID"] == user_id and status:
             raise HTTPException(status_code=404, detail="Already has this user in queue")
     # If user confirms ready, add to queue
@@ -281,12 +282,12 @@ async def update_user_status(user_id:int, status: bool, receiver_id: int, item: 
             "Rating": existing_user['rating'],  # Replace with actual user rating
             "Date": datetime.now()  # Add current date and time in "YYYY-MM-DD HH:MM:SS" format
         }
-        user_queue.append(user_details)  # Append user_details to user_queue (list)
+        taker_queue.append(user_details)  # Append user_details to taker_queue (list)
     else:
         # Remove user from queue if status is false
-        user_queue = [user for user in user_queue if user["userID"] != user_id]
+        taker_queue = [user for user in taker_queue if user["userID"] != user_id]
     
-    for item in user_queue:
+    for item in taker_queue:
         print(item)
 
     return {"message": f"User status updated in queue"}
@@ -307,10 +308,12 @@ class TaskCreate(BaseModel):
     gmv: float
     discount: float
 
+giver_queue = []
 # Example endpoint to create a task
 @app.post("/users/{user_id}/tasks/", response_description="Create a task", response_model=TaskCreate)
-async def create_task(user_id: int, task: TaskCreate = Body()):
+async def create_task(user_id: int, user_note:str , task: TaskCreate = Body()):
     # Fetch user details from the database based on giveruserID
+    global taker_queue
     user = await users_collection.find_one({"id": user_id})
     if user is None:
         raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
@@ -332,12 +335,64 @@ async def create_task(user_id: int, task: TaskCreate = Body()):
         },
         "gmv": task.gmv,
         "discount": task.discount,
-        "giveruserID": user_id
+        "giveruserID": user_id,
+        "note": user_note
     }
-    
+    giver_queue.append(task_data)
     # Insert task into givetask collection
     new_task = await givetask_collection.insert_one(task_data)
     
     # Fetch and return the created task document
     created_task = await givetask_collection.find_one({"_id": new_task.inserted_id})
-    return created_task
+    return created_task 
+
+# last event take task 
+taketask_queue=[]
+class TakeTask(BaseModel):
+    taskID: int
+    takerID: int
+    giverID: int
+    init_image: str
+    justifyimage: str
+    status: str
+    note: str
+    take_time: datetime
+    arrive_time: Optional[datetime] = None
+    commit_time: Optional[datetime] = None
+    completed_time: Optional[datetime] = None
+
+@app.put("/tasks/accept", response_description="Accept or reject task")
+async def accept_task(accept_status: bool, taker_id: int):
+    global taker_queue, giver_queue, taketask_queue
+    
+    if not taker_queue or not giver_queue:
+        raise HTTPException(status_code=404, detail="No tasks or users in queue")
+
+    taker = taker_queue[0]
+    giver = giver_queue[0]
+    
+    if taker["userID"] != taker_id:
+        raise HTTPException(status_code=400, detail="User ID mismatch")
+    
+    if accept_status:
+        take_task_data = TakeTask(
+            taskID=giver["taskID"],
+            takerID=taker["userID"],
+            giverID=giver["giveruserID"],
+            init_image=giver["images"],
+            status="Arriving",
+            note=giver["note"],
+            take_time=datetime.now()
+        )
+        taketask_queue.append(take_task_data)
+        taker_queue.pop(0)
+        giver_queue.pop(0)
+    else:
+        taker_queue.append(taker_queue.pop(0))
+        
+
+    return {"message": "Task acceptance processed"}
+
+
+
+
