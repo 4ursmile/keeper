@@ -1,7 +1,10 @@
+import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/screens/main_screen/sub_screens/simple_task.dart';
 
 import 'components/function_button.dart';
+import 'package:flutter_application_1/constants/sizes.dart';
+import 'package:flutter_application_1/constants/colors.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -12,9 +15,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final items = <FunctionButton>[
-    FunctionButton(icon: 'assets/icons/cash.png', name: 'Cash', onTap: () {}),
     FunctionButton(
-        icon: 'assets/icons/wallet.png', name: 'Wallet', onTap: () {}),
+        icon: 'assets/icons/cash.png', name: 'Cash in', onTap: () {}),
+    FunctionButton(
+        icon: 'assets/icons/wallet.png',
+        name: 'Cash out',
+        width: 50,
+        onTap: () {}),
     FunctionButton(icon: 'assets/icons/scan.png', name: 'Scan', onTap: () {}),
     FunctionButton(icon: 'assets/icons/qr.png', name: 'QR code', onTap: () {}),
   ];
@@ -68,47 +75,76 @@ class _MainScreenState extends State<MainScreen> {
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('My App'),
+        title: Padding(
+          padding: const EdgeInsets.only(
+            left: 8.0,
+            top: 10.0,
+            
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Balance',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: Sizes.largeText,
+                ),
+              ),
+              Text(
+                '\$1234.56', // Replace with your balance variable
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: Sizes.titleSize, 
+                  fontWeight: FontWeight.bold
+                ),
+              ),
+            ],
+          ),
+        ),
         forceMaterialTransparency: true,
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.settings,
-              color: Colors.black,
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: IconButton(
+              icon: Icon(
+                Icons.settings,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                // do something
+              },
             ),
-            onPressed: () {
-              // do something
-            },
-          )
+          ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             Container(
-              height: 250,
+              height: 230,
               child: Stack(children: [
                 Container(
                     width: 500,
-                    height: MediaQuery.of(context).size.height * 0.25,
+                    height: MediaQuery.of(context).size.height * 0.20,
                     decoration: BoxDecoration(
-                      color: Color(0xff006769),
+                      color: AppColors.primaryColor,
                       borderRadius: BorderRadius.only(
                           bottomLeft: Radius.circular(30),
                           bottomRight: Radius.circular(30)),
                     )),
                 Positioned(
-                    left: 30,
-                    right: 30,
-                    top: 160,
+                    left: 20,
+                    right: 20,
+                    top: 140,
                     child: Container(
                         height: 70,
-                        width: 100,
+                        width: 150,
                         decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.all(Radius.circular(20)),
                             boxShadow: [
-                              BoxShadow(color: Colors.black, blurRadius: 3.0),
+                              BoxShadow(color: Colors.grey, blurRadius: 3.0),
                             ]),
                         child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -139,10 +175,10 @@ class _MainScreenState extends State<MainScreen> {
                                 boxShadow: [
                                   // BoxShadow(color: Colors.black26, blurRadius: 4.0),
                                   BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 10.0,
-                                      spreadRadius: 1,
-                                      offset: Offset(0, 4)),
+                                      color: Colors.grey.shade200,
+                                      blurRadius: 5.0,
+                                      spreadRadius: 0.5,
+                                      offset: Offset(0, 2)),
                                 ]),
                             child: tasksButton[index]),
                       );

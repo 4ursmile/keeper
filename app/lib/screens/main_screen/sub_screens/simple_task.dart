@@ -58,7 +58,7 @@ class _SimpleTaskState extends State<SimpleTask> {
     print('Uploading image: ${imageFile}');
 
     var request = http.MultipartRequest(
-        'POST', Uri.parse('https://3acb-101-53-1-124.ngrok-free.app/files/'));
+        'POST', Uri.parse('https://3acb-101-53-1-124.ngrok-free.app/uploadfile/'));
 
     // Add headers
     request.headers.addAll({
