@@ -249,6 +249,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _mapController.future.then((value) => value.dispose());
     _markersStreamController.close();
     _customInfoWindowController.dispose();
     super.dispose();
