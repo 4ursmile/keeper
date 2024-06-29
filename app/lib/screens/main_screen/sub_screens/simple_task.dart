@@ -1,38 +1,30 @@
 import 'dart:io';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_application_1/constants/colors.dart';
 
 import 'package:aws_common/aws_common.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 
-import 'package:http/http.dart' as http;
-import 'package:crypto/crypto.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-
-// For S3 bucket
-String ACCESS_KEY = dotenv.env['AWS_ACCESS_KEY_ID']!;
-String ACCESS_SECRET = dotenv.env['AWS_SECRET_ACCESS_KEY']!;
+final String accessKey = dotenv.env["AWS_ACCESS_KEY_ID"]!;
+final String accessSecret = dotenv.env["AWS_SECRET_ACCESS_KEY"]!;
 const String region = 'ap-southeast-1';
 const String bucketName = 'keeper-storage';
 const String folderName = 'img';
 
 class SimpleTask extends StatefulWidget {
-  const SimpleTask({super.key});
+  const SimpleTask({Key? key}) : super(key: key);
 
   @override
   State<SimpleTask> createState() => _SimpleTaskState();
 }
 
-
 class _SimpleTaskState extends State<SimpleTask> {
-  File? image;
   List<XFile> images = [];
-  final signer = AWSSigV4Signer(credentialsProvider: AWSCredentialsProvider.environment());
 
   Future pickImage() async {
     try {
@@ -40,32 +32,36 @@ class _SimpleTaskState extends State<SimpleTask> {
       if (image == null) {
         return;
       }
-      
-      print('-->Image path: ${image.path}');
+
       setState(() {
         images.add(image);
       });
     } on PlatformException catch (e) {
-      print('-->Failed to fetch: $e');
+      print('Failed to pick image: $e');
     }
   }
 
   Future pickMulti() async {
-    final List<XFile>? selectedImage = await ImagePicker().pickMultiImage();
-    if (selectedImage!.isNotEmpty) {
-      images.addAll(selectedImage);
+    final List<XFile>? selectedImages = await ImagePicker().pickMultiImage();
+    if (selectedImages != null) {
+      setState(() {
+        images.addAll(selectedImages);
+      });
     }
-    setState(() {});
   }
 
+  final AWSSigV4Signer signer = AWSSigV4Signer(
+    credentialsProvider:
+        AWSCredentialsProvider(AWSCredentials(accessKey, accessSecret)),
+  );
   Future<void> uploadImage(XFile imageFile) async {
-    // Generate a pre-signed URL for uploading to S3
+    print('Uploading image: ${imageFile}');
     final key =
-        '$folderName/${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
-    final url = Uri.https('$bucketName.s3.$region.amazonaws.com', '/$key');
+        '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+    final url = Uri.parse('https://$bucketName.s3.$region.amazonaws.com/$key');
 
-    // Determine the content type based on the file extension
     String contentType;
+
     if (imageFile.path.endsWith('.png')) {
       contentType = 'image/png';
     } else if (imageFile.path.endsWith('.jpeg') ||
@@ -74,50 +70,78 @@ class _SimpleTaskState extends State<SimpleTask> {
     } else {
       throw UnsupportedError('Unsupported file type');
     }
-    final headers = <String, String>{
-      'Content-Type': contentType, // Adjust according to your image type
-    };
 
-    // Create a PUT request for uploading the image
-    final request = AWSHttpRequest(
-      method: AWSHttpMethod.put,
-      uri: url,
-      headers: headers,
-      body: await imageFile.readAsBytes(),
-    );
+    try {
+      // var request = http.MultipartRequest('POST', url);
+      // request.files
+      //     .add(await http.MultipartFile.fromPath('file', imageFile.path));
+      // request.fields.addAll({'key': key, 'acl': 'public-read'});
 
-    // Sign the request using AWS SigV4
-    final scope = AWSCredentialScope(
-      region: region,
-      service: AWSService.s3,
-    );
-    final signedRequest = await signer.sign(
-      request,
-      credentialScope: scope,
-    );
+      // var response = await request.send();
+      final scope = AWSCredentialScope(
+        region: region,
+        service: AWSService.s3,
+      );
 
-    // Upload the image file
-    final response = await http.put(
-      signedRequest.uri,
-      headers: signedRequest.headers,
-      body: signedRequest.body,
-    );
+      final bytes = await imageFile.readAsBytes();
+      final request = AWSHttpRequest(
+        method: AWSHttpMethod.post,
+        uri: url,
+        body: bytes,
+      );
 
-    // Handle the response
-    if (response.statusCode == 200) {
-      print('-->Image uploaded successfully!');
-    } else {
-      print('-->Failed to upload image. Status code: ${response.statusCode}');
-      print(response.body);
+      // Sign the request using AWS Signature Version 4
+      final signedRequest = await signer.sign(request, credentialScope: scope);
+      final response = await http.put(
+        signedRequest.uri,
+        headers: signedRequest.headers,
+        body: bytes,
+      );
+
+      if (response.statusCode == 200) {
+        print('--> Response: ${response}');
+        print('-->Image uploaded successfully');
+        // You can add further handling here if needed
+      } else {
+        print('--> Response: ${response.reasonPhrase}');
+        print('-->Failed to upload image. Status code: ${response.statusCode}');
+        // Handle error cases if necessary
+      }
+    } catch (e) {
+      print('-->Error uploading image: $e');
     }
+
+    // final bytes = await imageFile.readAsBytes();
+
+    // try {
+    //   final response = await http.put(
+    //     url,
+    //     headers: <String, String>{
+    //       'Content-Type': contentType,
+    //       'x-amz-acl': 'public-read',
+    //       'x-amz-storage-class': 'REDUCED_REDUNDANCY',
+    //       'Access-Control-Allow-Origin': '*',
+    //       'Access-Control-Allow-Credentials': 'true',
+    //       'Access-Control-Allow-Methods': 'GET,HEAD,OPTIONS,POST,PUT',
+    //       'Access-Control-Allow-Headers':
+    //           'Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers',
+    //     },
+    //     body: bytes,
+    //   );
+
+    //   if (response.statusCode == 200) {
+    //     print('Image uploaded successfully');
+    //   } else {
+    //     print('Failed to upload image: ${response}');
+    //   }
+    // } catch (e) {
+    //   print('Error uploading image: $e');
+    // }
   }
 
   void confirmAndUploadImages() {
     for (XFile imageFile in images) {
-      print('-->Uploading image: ${imageFile.path}');
-      print('API KEY: ${ACCESS_KEY}');
-      print('API SECRET: ${ACCESS_SECRET}');
-
+      print('Uploading image: ${imageFile.path}');
       uploadImage(imageFile);
     }
   }

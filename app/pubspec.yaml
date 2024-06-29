@@ -57,7 +57,7 @@ dependencies:
   crypto: ^3.0.3
   http: ^1.2.1
   flutter_dotenv: ^5.1.0
-
+  http_parser: ^4.0.2
 
 
 dev_dependencies:
