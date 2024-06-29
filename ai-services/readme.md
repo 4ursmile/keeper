@@ -16,6 +16,19 @@
   }
 }
 ```
-Change 'lorem' with specific value or contact me for result.
+Change 'lorem' with specific value or contact me for real ai_config.yaml.
 
+Create instance of specific services you want to use first then call their methods after!!!
+Example
+```python
+from s3_services import S3Services
+s3 = S3Services()
+url = s3.upload_image('test.png')
+
+### another one 
+from img_text_services import  ImgTextServices
+img_text = ImgTextServices()
+result = await img_text.get_result('Lift all box to floor 7', 'https://keeper-storage.s3.ap-southeast-1.amazonaws.com/img/test.png', mode='init')
+print(result)
+```
 ## Enjoy!!!!

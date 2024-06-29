@@ -1,0 +1,7 @@
+taker_start
+-user_id: int
+-address: object
+-long: float
+-lat: float 
+-rate: float 
+-wait_time: float
