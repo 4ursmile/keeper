@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_application_1/navigation/nav_models.dart';
 import 'package:flutter_application_1/screens/map_screen/map_screen.dart';
 import 'package:flutter_application_1/screens/task_screen/task_screen.dart';
+import 'package:flutter_application_1/screens/temp.dart';
 
 import '../navigation/nav_bar.dart';
 import '../navigation/tab_page.dart';
@@ -33,7 +34,7 @@ class _TabScreensState extends State<TabScreens> {
         navKey: homeNavKey,
       ),
       NavModel(
-        page: const TabPage(tab: 2),
+        page: MapScreen(),
         navKey: searchNavKey,
       ),
       NavModel(
