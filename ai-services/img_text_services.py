@@ -10,17 +10,15 @@ def ouput_extractor(result):
     return json.loads(result)
 class ImgTextServices:
     def __init__(self):
-        self.config = Config()
-        self.workflow_id = self.config['flow']['workflow_id']
-        self.api_key = self.config['flow']['api_key']
-        self.base_url = self.config['flow']['base_url']
+        cfg = Config()
+        self.workflow_id = cfg.cfg['flow']['workflow_id']
+        self.api_key = cfg.cfg['flow']['api_key']
+        self.base_url = cfg.cfg['flow']['base_url']
     async def post_workflow_run(self, input_data):
-        base_url = "https://api.workflowchef.ai"
-        api_key = "qqr_16505d26c9a653c8b31bd713438969656aa2b04bf64586e296b3d635ff62462e1604c1fc4081995667b356daad3e5b3c"
         
-        url = f"{base_url}/api/workflow_runs/"
+        url = f"{self.base_url}/api/workflow_runs/"
         headers = {
-            'Authorization': f'Bearer {api_key}',
+            'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
         }
         payload = {
@@ -41,6 +39,7 @@ class ImgTextServices:
                     'status': 404
                 }
     async def put_job_task_init_validate(self, description, img_url, mode):
+        assert mode in ['init', 'validate'], "mode must be 'init' or 'validate'"
         if mode == 'init':
             input_data = {'question': f"""
 You are a task judge. Your task is to determine whether the input image is relevant to the given task description to avoid fake tasks.
@@ -109,7 +108,8 @@ Now, here is the description for the task: "{description}".""",
                     'message': 'Workflow run not found',
                     'status': 404
                 }
-    async def call_workflow_api(self, des, img_url, mode: str = 'init'):
+    async def call_workflow_api(self, des, img_url, mode):
+        assert mode in ['init', 'validate'], "mode must be 'init' or 'validate'"
         result = await self.put_job_task_init_validate(des, img_url, mode)
         w_id = result['id']
         limit_exceeded = 30000
@@ -126,9 +126,9 @@ Now, here is the description for the task: "{description}".""",
                     'status': 404
                 }
         return result
-    async def get_result(self, des, img_url, mode: str = 'init'):
+    async def get_result(self, des, img_url, mode):
         assert mode in ['init', 'validate'], "mode must be 'init' or 'validate'"
-        result = await self.call_workflow_api(des, img_url)
+        result = await self.call_workflow_api(des, img_url, mode)
         return ouput_extractor(result)
 
 

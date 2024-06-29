@@ -163,3 +163,4 @@ cython_debug/
 
 # config files
 ai_config.yaml
+test.ipynb
