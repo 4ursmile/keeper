@@ -48,6 +48,22 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Container(
           child: Column(
             children: <Widget>[
+              SizedBox(
+                height: 250,
+                child: Center(
+                  child: FadeInUp(
+                    duration: Duration(milliseconds: 1500),
+                    child: Text(
+                      "Login",
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Padding(
                 padding: EdgeInsets.all(30.0),
                 child: Column(
@@ -74,7 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: EdgeInsets.all(8.0),
                               decoration: BoxDecoration(
                                 border: Border(
-                                  bottom: BorderSide(color: AppColors.primaryColor),
+                                  bottom:
+                                      BorderSide(color: AppColors.primaryColor),
                                 ),
                               ),
                               child: TextField(
