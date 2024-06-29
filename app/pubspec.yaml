@@ -68,6 +68,8 @@ dependencies:
   fl_geocoder: ^0.1.0+1
   flutter_google_places_hoc081098: ^2.0.0
 
+  flutter_secure_storage: ^9.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
