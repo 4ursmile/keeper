@@ -56,87 +56,30 @@ class _SimpleTaskState extends State<SimpleTask> {
   );
   Future<void> uploadImage(XFile imageFile) async {
     print('Uploading image: ${imageFile}');
-    final key =
-        '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
-    final url = Uri.parse('https://$bucketName.s3.$region.amazonaws.com/$key');
 
-    String contentType;
+    var request = http.MultipartRequest(
+        'POST', Uri.parse('https://3acb-101-53-1-124.ngrok-free.app/files/'));
 
-    if (imageFile.path.endsWith('.png')) {
-      contentType = 'image/png';
-    } else if (imageFile.path.endsWith('.jpeg') ||
-        imageFile.path.endsWith('.jpg')) {
-      contentType = 'image/jpeg';
+    // Add headers
+    request.headers.addAll({
+      'accept': 'application/json',
+    });
+
+    // Add file
+    request.files.add(await http.MultipartFile.fromPath(
+      'file',
+      imageFile.path,
+      contentType: MediaType('image', 'jpeg'),
+    ));
+
+    // Send request
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      print('Image uploaded successfully');
     } else {
-      throw UnsupportedError('Unsupported file type');
+      print('Failed to upload image. Error: ${response.reasonPhrase}');
     }
-
-    try {
-      // var request = http.MultipartRequest('POST', url);
-      // request.files
-      //     .add(await http.MultipartFile.fromPath('file', imageFile.path));
-      // request.fields.addAll({'key': key, 'acl': 'public-read'});
-
-      // var response = await request.send();
-      final scope = AWSCredentialScope(
-        region: region,
-        service: AWSService.s3,
-      );
-
-      final bytes = await imageFile.readAsBytes();
-      final request = AWSHttpRequest(
-        method: AWSHttpMethod.post,
-        uri: url,
-        body: bytes,
-      );
-
-      // Sign the request using AWS Signature Version 4
-      final signedRequest = await signer.sign(request, credentialScope: scope);
-      final response = await http.put(
-        signedRequest.uri,
-        headers: signedRequest.headers,
-        body: bytes,
-      );
-
-      if (response.statusCode == 200) {
-        print('--> Response: ${response}');
-        print('-->Image uploaded successfully');
-        // You can add further handling here if needed
-      } else {
-        print('--> Response: ${response.reasonPhrase}');
-        print('-->Failed to upload image. Status code: ${response.statusCode}');
-        // Handle error cases if necessary
-      }
-    } catch (e) {
-      print('-->Error uploading image: $e');
-    }
-
-    // final bytes = await imageFile.readAsBytes();
-
-    // try {
-    //   final response = await http.put(
-    //     url,
-    //     headers: <String, String>{
-    //       'Content-Type': contentType,
-    //       'x-amz-acl': 'public-read',
-    //       'x-amz-storage-class': 'REDUCED_REDUNDANCY',
-    //       'Access-Control-Allow-Origin': '*',
-    //       'Access-Control-Allow-Credentials': 'true',
-    //       'Access-Control-Allow-Methods': 'GET,HEAD,OPTIONS,POST,PUT',
-    //       'Access-Control-Allow-Headers':
-    //           'Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers',
-    //     },
-    //     body: bytes,
-    //   );
-
-    //   if (response.statusCode == 200) {
-    //     print('Image uploaded successfully');
-    //   } else {
-    //     print('Failed to upload image: ${response}');
-    //   }
-    // } catch (e) {
-    //   print('Error uploading image: $e');
-    // }
   }
 
   void confirmAndUploadImages() {
