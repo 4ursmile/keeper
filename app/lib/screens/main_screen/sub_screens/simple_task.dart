@@ -10,12 +10,9 @@ import 'package:flutter_application_1/constants/colors.dart';
 import 'package:aws_common/aws_common.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 
-
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-
 
 final String accessKey = dotenv.env["AWS_ACCESS_KEY_ID"]!;
 final String accessSecret = dotenv.env["AWS_SECRET_ACCESS_KEY"]!;
@@ -65,8 +62,8 @@ class _SimpleTaskState extends State<SimpleTask> {
   Future<void> uploadImage(XFile imageFile) async {
     print('Uploading image: ${imageFile}');
 
-    var request = http.MultipartRequest(
-        'POST', Uri.parse('https://3acb-101-53-1-124.ngrok-free.app/uploadfile/'));
+    var request = http.MultipartRequest('POST',
+        Uri.parse('https://3acb-101-53-1-124.ngrok-free.app/uploadfile/'));
 
     // Add headers
     request.headers.addAll({
@@ -102,9 +99,11 @@ class _SimpleTaskState extends State<SimpleTask> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xff006769),
+        leading: BackButton(color: Colors.white),
+        titleSpacing: 0,
         title: Text(
           'Simple Tasks',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(

@@ -222,15 +222,15 @@ class MapScreen extends StatefulWidget {
 //   }
 // }
 class _MapScreenState extends State<MapScreen> {
-
   CustomInfoWindowController _customInfoWindowController =
-  CustomInfoWindowController();
+      CustomInfoWindowController();
   Location _locationController = Location();
   static const LatLng _pGooglePlex = LatLng(37.4223, -122.0090);
   static const LatLng _pApplePark = LatLng(37.3346, -122.4434);
   LatLng? _currentP;
   final Completer<GoogleMapController> _mapController = Completer();
-  final StreamController<List<Marker>> _markersStreamController = StreamController<List<Marker>>.broadcast();
+  final StreamController<List<Marker>> _markersStreamController =
+      StreamController<List<Marker>>.broadcast();
   List<Marker> _markers = [];
   late String _mapStyle;
   List<Polyline> _polylines = [];
@@ -258,8 +258,8 @@ class _MapScreenState extends State<MapScreen> {
     final completer = Completer<ImageInfo>();
     var img = AssetImage(path);
     img.resolve(const ImageConfiguration(size: Size.fromHeight(5))).addListener(
-      ImageStreamListener((info, _) => completer.complete(info)),
-    );
+          ImageStreamListener((info, _) => completer.complete(info)),
+        );
     final imageInfo = await completer.future;
     final byteData = await imageInfo.image.toByteData(
       format: ImageByteFormat.png,
@@ -304,8 +304,7 @@ class _MapScreenState extends State<MapScreen> {
 
   loadData() async {
     for (int i = 0; i < images.length; i++) {
-      Uint8List? image = await _loadNetworkImage(
-          'assets/icons/point.png');
+      Uint8List? image = await _loadNetworkImage('assets/icons/point.png');
 
       final ui.Codec markerImageCodec = await instantiateImageCodec(
         image!.buffer.asUint8List(),
@@ -338,23 +337,24 @@ class _MapScreenState extends State<MapScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children:  [
+                  children: [
                     Container(
                       width: 300,
                       height: 100,
                       decoration: const BoxDecoration(
-                        image:  DecorationImage(
-                            image: NetworkImage('https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg?cs=srgb&dl=pexels-narda-yescas-1566837.jpg&fm=jpg'),
+                        image: DecorationImage(
+                            image: NetworkImage(
+                                'https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg?cs=srgb&dl=pexels-narda-yescas-1566837.jpg&fm=jpg'),
                             fit: BoxFit.fitWidth,
                             filterQuality: FilterQuality.high),
-                        borderRadius:  BorderRadius.all(
+                        borderRadius: BorderRadius.all(
                           Radius.circular(10.0),
                         ),
                         color: Colors.red,
                       ),
                     ),
-                    const   Padding(
-                      padding:  EdgeInsets.only(top: 10 , left: 10 , right: 10),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10, left: 10, right: 10),
                       child: Row(
                         children: [
                           SizedBox(
@@ -371,29 +371,23 @@ class _MapScreenState extends State<MapScreen> {
                           Text(
                             '.3 mi.',
                             style: TextStyle(color: Colors.black),
-
                           )
                         ],
                       ),
                     ),
-                    const  Padding(
-                      padding:  EdgeInsets.only(top: 10 , left: 10 , right: 10),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10, left: 10, right: 10),
                       child: Text(
                         'Help me finish these tacos! I got a platter from Costco and it’s too much.',
                         maxLines: 2,
                         style: TextStyle(color: Colors.black),
-
                       ),
                     ),
-
                   ],
                 ),
               ),
-              LatLng(_latLang[i].latitude, _latLang[i].longitude)
-          );
-          setState(() {
-
-          });
+              LatLng(_latLang[i].latitude, _latLang[i].longitude));
+          setState(() {});
         },
       ));
       _markersStreamController.add(_markers);
@@ -403,7 +397,11 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.transparent,
+      ),
+      extendBodyBehindAppBar: true,
       body: StreamBuilder<List<Marker>>(
         stream: _markersStreamController.stream,
         builder: (context, snapshot) {
@@ -426,25 +424,28 @@ class _MapScreenState extends State<MapScreen> {
                   myLocationButtonEnabled: true,
                   myLocationEnabled: true,
                   onMapCreated: (GoogleMapController controller) async {
-                    _customInfoWindowController.googleMapController = controller;
+                    _customInfoWindowController.googleMapController =
+                        controller;
                     _mapController.complete(controller);
                     _mapController.future.then((value) {
                       value.setMapStyle(_mapStyle);
                     });
                   },
-                  initialCameraPosition: CameraPosition(target: _pGooglePlex, zoom: 13),
+                  initialCameraPosition:
+                      CameraPosition(target: _pGooglePlex, zoom: 13),
                   markers: Set<Marker>.of(snapshot.data!),
                   polylines: Set<Polyline>.of(_polylines),
                   circles: _currentP != null
                       ? {
-                    Circle(
-                      circleId: CircleId("1"),
-                      center: LatLng(_currentP!.latitude, _currentP!.longitude),
-                      radius: 430,
-                      strokeWidth: 2,
-                      fillColor: Color(0xff006491).withOpacity(0.2),
-                    ),
-                  }
+                          Circle(
+                            circleId: CircleId("1"),
+                            center: LatLng(
+                                _currentP!.latitude, _currentP!.longitude),
+                            radius: 430,
+                            strokeWidth: 2,
+                            fillColor: Color(0xff006491).withOpacity(0.2),
+                          ),
+                        }
                       : {},
                 ),
                 CustomInfoWindow(
@@ -464,7 +465,8 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _cameraToPosition(LatLng pos) async {
     final GoogleMapController controller = await _mapController.future;
     CameraPosition _newCameraPosition = CameraPosition(target: pos, zoom: 16);
-    await controller.animateCamera(CameraUpdate.newCameraPosition(_newCameraPosition));
+    await controller
+        .animateCamera(CameraUpdate.newCameraPosition(_newCameraPosition));
   }
 
   Future<void> getLocationUpdates() async {
@@ -486,10 +488,14 @@ class _MapScreenState extends State<MapScreen> {
       }
     }
 
-    _locationController.onLocationChanged.listen((LocationData currentLocation) {
-      if (currentLocation.latitude != null && currentLocation.longitude != null) {
-        _currentP = LatLng(currentLocation.latitude!, currentLocation.longitude!);
-        print('_currentP ${currentLocation.latitude!}, ${currentLocation.longitude!}');
+    _locationController.onLocationChanged
+        .listen((LocationData currentLocation) {
+      if (currentLocation.latitude != null &&
+          currentLocation.longitude != null) {
+        _currentP =
+            LatLng(currentLocation.latitude!, currentLocation.longitude!);
+        print(
+            '_currentP ${currentLocation.latitude!}, ${currentLocation.longitude!}');
         _cameraToPosition(_currentP!);
         _addInitialMarker();
       }
@@ -532,7 +538,8 @@ class _MapScreenState extends State<MapScreen> {
       googleApiKey: dotenv.env["MAP_API_KEY"],
       request: PolylineRequest(
         origin: PointLatLng(_currentP!.latitude, _currentP!.longitude),
-        destination: PointLatLng(markerPosition.latitude, markerPosition.longitude),
+        destination:
+            PointLatLng(markerPosition.latitude, markerPosition.longitude),
         mode: TravelMode.driving,
       ),
     );

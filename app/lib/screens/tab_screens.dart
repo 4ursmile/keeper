@@ -7,6 +7,7 @@ import 'package:flutter_application_1/screens/map_screen/map_screen.dart';
 import 'package:flutter_application_1/screens/temp.dart';
 
 import 'package:flutter_application_1/screens/tracking_screen/task_screen.dart';
+import 'package:flutter_application_1/constants/colors.dart';
 
 
 import '../navigation/nav_bar.dart';
@@ -74,7 +75,7 @@ class _TabScreensState extends State<TabScreens> {
           height: 64,
           width: 64,
           child: FloatingActionButton(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.primaryColor,
             elevation: 0,
             onPressed: () {
               Navigator.push(
@@ -82,14 +83,15 @@ class _TabScreensState extends State<TabScreens> {
                 MaterialPageRoute(builder: (context) => const MapScreen()));
             },
             shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 3, color: Colors.green),
+              side: const BorderSide(width: 3, color: AppColors.primaryColor),
+              
               borderRadius: BorderRadius.circular(100),
             ),
             // child: const Icon(
             //   Icons.add,
             //   color: Colors.green,
             // ),
-            child: Image.asset('assets/icons/fav.png', color: Colors.green)
+            child: Image.asset('assets/icons/fav.png', color: Colors.white)
           ),
         ),
       ),
