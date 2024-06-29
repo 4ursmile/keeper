@@ -10,8 +10,16 @@ import 'package:flutter_application_1/constants/colors.dart';
 import 'package:aws_common/aws_common.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 
+
+import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+
+
 final String accessKey = dotenv.env["AWS_ACCESS_KEY_ID"]!;
 final String accessSecret = dotenv.env["AWS_SECRET_ACCESS_KEY"]!;
+
 const String region = 'ap-southeast-1';
 const String bucketName = 'keeper-storage';
 const String folderName = 'img';
