@@ -52,6 +52,13 @@ dependencies:
   animate_do: ^3.3.4
   shared_preferences: ^2.2.3
 
+  aws_common: ^0.4.0
+  aws_signature_v4: ^0.3.0
+  crypto: ^3.0.3
+  http: ^1.2.1
+  flutter_dotenv: ^5.1.0
+
+
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +86,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/
+    - .env
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
