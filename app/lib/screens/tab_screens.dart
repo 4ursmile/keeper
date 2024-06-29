@@ -5,15 +5,22 @@ import 'package:flutter_application_1/navigation/nav_models.dart';
 import 'package:flutter_application_1/screens/map_screen/map_screen.dart';
 
 import 'package:flutter_application_1/screens/temp.dart';
+import 'package:flutter_application_1/screens/temp2.dart';
+import 'package:fl_geocoder/fl_geocoder.dart';
 
 import 'package:flutter_application_1/screens/tracking_screen/task_screen.dart';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'package:flutter_application_1/constants/colors.dart';
+
 
 
 import '../navigation/nav_bar.dart';
 import '../navigation/tab_page.dart';
 import 'main_screen/main_screen.dart';
 import 'newfeed_screen/newfeed_screen.dart';
+import 'profile_screen/profile_screen.dart';
 
 class TabScreens extends StatefulWidget {
   const TabScreens({super.key});
@@ -29,10 +36,11 @@ class _TabScreensState extends State<TabScreens> {
   final profileNavKey = GlobalKey<NavigatorState>();
   int selectedTab = 0;
   List<NavModel> items = [];
-
+  late FlGeocoder geocoder;
   @override
   void initState() {
     super.initState();
+    geocoder = FlGeocoder(dotenv.env["MAP_API_KEY"]!);
     items = [
       NavModel(
         page: const MainScreen(),
@@ -47,7 +55,7 @@ class _TabScreensState extends State<TabScreens> {
         navKey: notificationNavKey,
       ),
       NavModel(
-        page: const TabPage(tab: 4),
+        page: const ProfileScreen(),
         navKey: profileNavKey,
       ),
     ];
