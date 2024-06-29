@@ -18,6 +18,7 @@ import 'package:flutter_application_1/constants/colors.dart';
 
 import '../navigation/nav_bar.dart';
 import '../navigation/tab_page.dart';
+import 'confirm_screen/confirm_screen.dart';
 import 'main_screen/main_screen.dart';
 import 'newfeed_screen/newfeed_screen.dart';
 import 'profile_screen/profile_screen.dart';

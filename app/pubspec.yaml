@@ -67,6 +67,7 @@ dependencies:
   flutter_geocoder: ^0.2.2-nullsafety
   fl_geocoder: ^0.1.0+1
   flutter_google_places_hoc081098: ^2.0.0
+  flutter_barcode_scanner: ^2.0.0
 
 dev_dependencies:
   flutter_test:

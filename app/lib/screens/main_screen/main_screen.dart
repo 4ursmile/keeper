@@ -1,5 +1,6 @@
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_application_1/screens/main_screen/sub_screens/simple_task.dart';
 
 import 'components/function_button.dart';
@@ -14,20 +15,21 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final items = <FunctionButton>[
-    FunctionButton(
-        icon: 'assets/icons/cash.png', name: 'Cash in', onTap: () {}),
-    FunctionButton(
-        icon: 'assets/icons/wallet.png',
-        name: 'Cash out',
-        width: 50,
-        onTap: () {}),
-    FunctionButton(icon: 'assets/icons/scan.png', name: 'Scan', onTap: () {}),
-    FunctionButton(icon: 'assets/icons/qr.png', name: 'QR code', onTap: () {}),
-  ];
 
+  late String qrCode;
   @override
   Widget build(BuildContext context) {
+    final items = <FunctionButton>[
+      FunctionButton(
+          icon: 'assets/icons/cash.png', name: 'Cash in', onTap: () {}),
+      FunctionButton(
+          icon: 'assets/icons/wallet.png',
+          name: 'Cash out',
+          width: 50,
+          onTap: () {}),
+      FunctionButton(icon: 'assets/icons/scan.png', name: 'Scan', onTap: () {}),
+      FunctionButton(icon: 'assets/icons/qr.png', name: 'QR code', onTap: () {}),
+    ];
     final tasksButton = [
       FunctionButton(
           icon: 'assets/icons/simple.png',
@@ -36,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
           width: 150,
           iconHeight: 100,
           fontSize: 15,
-          spacing: 25,
+          spacing: 3,
           onTap: () {
             Navigator.push(
               context,
@@ -50,7 +52,7 @@ class _MainScreenState extends State<MainScreen> {
           width: 150,
           iconHeight: 100,
           fontSize: 15,
-          spacing: 25,
+          spacing: 3,
           onTap: () {}),
       FunctionButton(
           icon: 'assets/icons/campaign.png',
@@ -59,7 +61,7 @@ class _MainScreenState extends State<MainScreen> {
           width: 150,
           iconHeight: 100,
           fontSize: 15,
-          spacing: 25,
+          spacing: 3,
           onTap: () {}),
       FunctionButton(
           icon: 'assets/icons/public.png',
@@ -68,7 +70,7 @@ class _MainScreenState extends State<MainScreen> {
           width: 150,
           iconHeight: 100,
           fontSize: 15,
-          spacing: 25,
+          spacing: 3,
           onTap: () {}),
     ];
     return Scaffold(
