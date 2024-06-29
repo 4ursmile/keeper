@@ -51,13 +51,21 @@ dependencies:
 
   animate_do: ^3.3.4
   shared_preferences: ^2.2.3
+  custom_info_window: ^1.0.1
 
   aws_common: ^0.4.0
   aws_signature_v4: ^0.3.0
   crypto: ^3.0.3
   http: ^1.2.1
   flutter_dotenv: ^5.1.0
+
+  iconic: ^0.1.0
+  typicons_flutter: ^0.5.0
+  scale_button: ^2.1.2
+
+
   http_parser: ^4.0.2
+
 
 
 dev_dependencies:
@@ -86,6 +94,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/
+    - assets/icons/images
     - .env
   #   - images/a_dot_ham.jpeg
 

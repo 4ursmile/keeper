@@ -12,6 +12,7 @@ import 'package:flutter_application_1/screens/tracking_screen/task_screen.dart';
 import '../navigation/nav_bar.dart';
 import '../navigation/tab_page.dart';
 import 'main_screen/main_screen.dart';
+import 'newfeed_screen/newfeed_screen.dart';
 
 class TabScreens extends StatefulWidget {
   const TabScreens({super.key});
@@ -37,7 +38,7 @@ class _TabScreensState extends State<TabScreens> {
         navKey: homeNavKey,
       ),
       NavModel(
-        page: MapScreen(),
+        page: NewFeedScreen(),
         navKey: searchNavKey,
       ),
       NavModel(
