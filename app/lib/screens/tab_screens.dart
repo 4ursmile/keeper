@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_application_1/navigation/nav_models.dart';
 import 'package:flutter_application_1/screens/map_screen/map_screen.dart';
-import 'package:flutter_application_1/screens/task_screen/task_screen.dart';
+
 import 'package:flutter_application_1/screens/temp.dart';
+
+import 'package:flutter_application_1/screens/tracking_screen/task_screen.dart';
+
 
 import '../navigation/nav_bar.dart';
 import '../navigation/tab_page.dart';
