@@ -24,6 +24,12 @@ import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+
+
+import '../../../models/location.dart';
+import '../../../models/task.dart';
+import '../../confirm_screen/confirm_screen.dart';
+
 import '../../temp2.dart';
 
 final String accessKey = dotenv.env["AWS_ACCESS_KEY_ID"]!;
@@ -42,8 +48,8 @@ class SimpleTask extends StatefulWidget {
 
 class _SimpleTaskState extends State<SimpleTask> {
   String result = "";
-  String lat = "";
-  String lng = "";
+  double lat = 0.0;
+  double lng = 0.0;
   String? message;
   List<XFile> images = [];
   late geo.FlGeocoder geocoder;
@@ -190,8 +196,8 @@ class _SimpleTaskState extends State<SimpleTask> {
     if (isEnable) {
       Position location = await Geolocator.getCurrentPosition();
       result = "";
-      lat = location.latitude.toString();
-      lng = location.longitude.toString();
+      lat = location.latitude;
+      lng = location.longitude;
       // try {
       //   final geocoder = FlGeocoder(dotenv.env["MAP_API_KEY"]!);
       //   print('--> Map ${dotenv.env["MAP_API_KEY"]!}');
@@ -523,7 +529,18 @@ class _SimpleTaskState extends State<SimpleTask> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
-                      confirmAndUploadImages();
+                      // confirmAndUploadImages();
+                      final location = MyLocation(latitude: lat, longitude: lng, note: message ?? "");
+                      final task = Task(
+                        images: images[0].path,
+                        description: "",
+                        location: location,
+                        gmv: 0.0,
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ConfirmScreen(task: task)),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
@@ -537,7 +554,7 @@ class _SimpleTaskState extends State<SimpleTask> {
                     ),
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: 300,
                   height: 100,
                 ),

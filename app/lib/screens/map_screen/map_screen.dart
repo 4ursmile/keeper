@@ -236,9 +236,9 @@ class _MapScreenState extends State<MapScreen> {
                     _customInfoWindowController.googleMapController =
                         controller;
                     _mapController.complete(controller);
-                    _mapController.future.then((value) {
-                      value.setMapStyle(_mapStyle);
-                    });
+                    // _mapController.future.then((value) {
+                    //   value.setMapStyle(_mapStyle);
+                    // });
                   },
                   initialCameraPosition:
                       CameraPosition(target: _pGooglePlex, zoom: 13),
@@ -251,7 +251,7 @@ class _MapScreenState extends State<MapScreen> {
                             center: LatLng(
                                 _currentP!.latitude, _currentP!.longitude),
                             radius: 430,
-                            strokeWidth: 2,
+                            strokeWidth: 0,
                             fillColor: Color(0xff006491).withOpacity(0.2),
                           ),
                         }
