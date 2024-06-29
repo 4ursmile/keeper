@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
@@ -31,7 +32,7 @@ class LocationAutoCompleteState extends State<LocationAutoComplete> {
   }
 
   void placeSuggestion(String input) async {
-    const String apiKey = "AIzaSyDvjZL5tOtbI9aMH6D4QQ4jeji7-DSNV9M";
+    final String apiKey = dotenv.env["MAP_API_KEY"]!;
     try {
       String bassedUrl =
           "https://maps.googleapis.com/maps/api/place/autocomplete/json";
