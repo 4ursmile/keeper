@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:animate_do/animate_do.dart';
+import 'package:http_parser/http_parser.dart';
 import '../../constants/colors.dart';
 import '../../models/task.dart';
 
@@ -15,7 +20,6 @@ class ConfirmScreen extends StatefulWidget {
 class _ConfirmScreenState extends State<ConfirmScreen> {
   final TextEditingController _controller = TextEditingController();
   bool _showHintText = true;
-
   @override
   void initState() {
     super.initState();
@@ -30,6 +34,156 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> uploadImages() async {
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://3acb-101-53-1-124.ngrok-free.app/upload/'),
+      );
+
+      // Add headers
+      request.headers.addAll({
+        'accept': 'application/json',
+      });
+
+      // Add file
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        widget.task.images!,
+        contentType: MediaType('image', 'jpeg'),
+      ));
+
+      // Send request
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        print('Image uploaded successfully');
+      } else {
+        print('Failed to upload image. Error: ${response.reasonPhrase}');
+      }
+  }
+
+
+  Future<void> _pushTaskToServer() async {
+    // Convert task object to JSON string
+    // print('--> Model ${widget.task.toJson()}');
+    // String jsonData = jsonEncode(widget.task.toJson());
+    var taskData = {
+      'images': widget.task.images,
+      'description': widget.task.description,
+      'location': {
+        'longitude': widget.task.location!.longitude,
+        'latitude': widget.task.location!.latitude,
+        'note': widget.task.location!.note,
+      },
+      'gmv': widget.task.gmv,
+      'discount': 10.0, // Example discount, adjust as needed
+    };
+    print('--> JSON ${taskData}');
+    try {
+      // Send POST request to the server
+      var response = await http.post(
+        Uri.parse("https://3acb-101-53-1-124.ngrok-free.app/users/2/tasks/?user_note=2"),
+        headers: {
+          HttpHeaders.contentTypeHeader: 'application/json',
+        },
+        body: jsonEncode(taskData),
+      );
+      await uploadImages();
+      // Check if request was successful
+      if (response.statusCode == 200) {
+        // Show success dialog
+        // showDialog(
+        //   context: context,
+        //   builder: (BuildContext context) {
+        //     return AlertDialog(
+        //       title: Text('Success'),
+        //       content: Text('Task has been successfully sent.'),
+        //       actions: <Widget>[
+        //         TextButton(
+        //           child: Text('OK'),
+        //           onPressed: () {
+        //             Navigator.of(context).pop(); // Close the dialog
+        //           },
+        //         ),
+        //       ],
+        //     );
+        //   },
+        // );
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check, color: Colors.green),
+                  Text("Your task has been published!", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          // Handle "Home" button press
+                        },
+                        child: Text("Home"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Handle "Tracking" button press
+                        },
+                        child: Text("Tracking"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+      } else {
+        // Handle server error
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('Failed to send task. Server returned ${response.statusCode}.'),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      // Handle network errors or exceptions
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Failed to send task. Error: $e'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -51,7 +205,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Placeholder(fallbackHeight: 150),
+                child: Image.file(
+                    File(widget.task.images!), height: 150),
               ),
               const SizedBox(height: 30),
               Padding(
@@ -65,7 +220,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: Text(widget.task.description),
+                      child: Text(widget.task.description!),
                     ),
                     const SizedBox(height: 20),
                     Text('Location',
@@ -74,7 +229,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: Text(widget.task.location.note),
+                      child: Text(widget.task.location!.note!),
                     ),
                     const SizedBox(height: 20),
                     Text('Number of Takers',
@@ -98,6 +253,9 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                           height: 100,
                           width: 300,
                           child: TextField(
+                            onChanged: (value) {
+                              widget.task.gmv = int.parse(value);
+                            },
                             controller: _controller,
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
@@ -116,7 +274,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: () {
-                            // Add your confirm action here
+                            _pushTaskToServer(); // Call function to push task to server
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryColor,

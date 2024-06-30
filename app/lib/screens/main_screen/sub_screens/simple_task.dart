@@ -47,6 +47,7 @@ class SimpleTask extends StatefulWidget {
 }
 
 class _SimpleTaskState extends State<SimpleTask> {
+  final TextEditingController _descriptionController = TextEditingController();
   String result = "";
   double lat = 0.0;
   double lng = 0.0;
@@ -69,10 +70,10 @@ class _SimpleTaskState extends State<SimpleTask> {
   }
 
   Future pickMulti() async {
-    final List<XFile>? selectedImages = await ImagePicker().pickMultiImage();
+    final XFile? selectedImages = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (selectedImages != null) {
       setState(() {
-        images.addAll(selectedImages);
+        images.add(selectedImages);
       });
     }
   }
@@ -131,6 +132,12 @@ class _SimpleTaskState extends State<SimpleTask> {
 
   _onChange() {
     placeSuggestion(searchController.text);
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   void placeSuggestion(String input) async {
@@ -395,7 +402,27 @@ class _SimpleTaskState extends State<SimpleTask> {
                 Container(
                     width: 310,
                     height: 100,
-                    child: CustomInput(hintText: 'Input the description...'))
+                    child: Container(
+                      padding: EdgeInsets.only(left: 8.0, right: 8.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.primaryColor, // Border color
+                        ),
+                        borderRadius: BorderRadius.circular(8.0), // Border radius
+                      ),
+                      child: TextField(
+                        onChanged: (text) {
+                          _descriptionController.text = text;
+                        },
+                        controller: _descriptionController,
+                        maxLines: 4, // Allows multiline input
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'Input the description', // Custom hint text
+                        ),
+                      ),
+
+                    )),
               ],
             ),
             const SizedBox(height: 30),
@@ -528,14 +555,16 @@ class _SimpleTaskState extends State<SimpleTask> {
                   width: 200,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       // confirmAndUploadImages();
                       final location = MyLocation(latitude: lat, longitude: lng, note: message ?? "");
+                      // List<int> imageBytes = await images[0].readAsBytes();
+                      // String base64Image = base64Encode(imageBytes);
                       final task = Task(
                         images: images[0].path,
-                        description: "",
+                        description: _descriptionController.text,
                         location: location,
-                        gmv: 0.0,
+                        gmv: 0,
                       );
                       Navigator.push(
                         context,
