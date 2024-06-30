@@ -1,0 +1,7 @@
+boto3
+pillow
+requests
+torch torchvision
+transformers
+numpy
+opencv-python
