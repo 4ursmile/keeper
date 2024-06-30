@@ -13,7 +13,7 @@ import os
 import queue
 import asyncio
 import boto3
-from tempfile import NamedTemporaryFile
+import cv2
 class ReviewCreate(BaseModel):
     rate: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
     comment: Optional[str] = Field(None, description="Optional comment from the user")
@@ -328,29 +328,55 @@ class TaskCreate(BaseModel):
 giver_queue = []
 # Example endpoint to create a task
 
+@app.post("/users/{user_id}/download/")
+async def read_file(name: str = "default.jpg"):
+    files= os.listdir(IMAGEDIR)
+    path = f"{IMAGEDIR}{name}"
+    if name not in files:
+        raise HTTPException(status_code=404, detail="File not found or check your file name again (jpg or png)!")
+    return FileResponse(path)
 
-@app.post("/users/{user_id}/tasks/", response_description="Create a task", response_model=TaskCreate)
-async def create_task(user_id: int, user_note: str, file: UploadFile = File(...), task: TaskCreate = Body()):
-    # Fetch user details from the database based on giveruserID
+from ai_services.s3_services import S3Services
+@app.post("/users/{user_id}/upload/")
+async def create_upload_file(user_id:int ,file: UploadFile= File(...)):
+    file.filename = f"{IMAGEDIR}{file.filename}"
+    content = await file.read()
+    
+    # Save the file in server
+    with open(file.filename, "wb") as f:
+        f.write(content)
+
     user = await users_collection.find_one({"id": user_id})
     if user is None:
         raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
 
-    # Upload image to S3
-    with NamedTemporaryFile(delete=False) as tmp_file:
-        tmp_file.write(await file.read())
-        tmp_file.flush()
-        file_key = f"{user_id}/{file.filename}"
-        s3_client.upload_file(tmp_file.name, 'your-bucket-name', file_key)
+    # Upload the file to S3
+    s3 = S3Services()
+    image_url = s3.upload_image(file.filename) 
 
-    # Prepare task data with user's address details and S3 URL
+    # Update user's images field with the image URL
+    user = await db["givetask"].update_one(
+        {"giveruserID": user_id},
+        {"$set": {"images": image_url}} 
+    )
+    return {"filename": file.filename}
+
+@app.post("/users/{user_id}/tasks/", response_description="Create a task", response_model=TaskCreate)
+async def create_task(user_id: int, user_note:str , task: TaskCreate = Body()):
+    # Fetch user details from the database based on giveruserID
+    global taker_queue
+    user = await users_collection.find_one({"id": user_id})
+    if user is None:
+        raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
+    
+    # Prepare task data with user's address details
+    
     task_id = await givetask_collection.count_documents({}) + 1  # Automatically generate taskID
     while await givetask_collection.find_one({"taskID": task_id}):  # Ensure no duplicate taskID
         task_id += 1
-
     task_data = {
         "taskID": task_id,
-        "images": f"https://your-bucket-name.s3.amazonaws.com/{file_key}",
+        "images": task.images,
         "description": task.description,
         "location": {
             "country": user["address"]["country"],
@@ -366,15 +392,13 @@ async def create_task(user_id: int, user_note: str, file: UploadFile = File(...)
         "giveruserID": user_id,
         "note": user_note
     }
-
     giver_queue.append(task_data)
-
     # Insert task into givetask collection
     new_task = await givetask_collection.insert_one(task_data)
-
+    
     # Fetch and return the created task document
     created_task = await givetask_collection.find_one({"_id": new_task.inserted_id})
-    return created_task
+    return created_task 
 
 @app.put("/tasks/complete", response_description="Complete task")
 async def complete_task(confirm: bool):
@@ -495,6 +519,7 @@ class Transaction(BaseModel):
     time: datetime
     status: bool
 
+
 @app.put("/tasks/complete", response_description="Complete task")
 async def complete_task(confirm: bool):
     global taketask_queue
@@ -529,4 +554,41 @@ async def complete_task(confirm: bool):
         taketask_queue.append(taketask_queue.pop(0))
         return {"message": "Task completion cancelled"}
     
+@app.put("/tasks/image", response_description="Upload image")
+async def upload_image_when_complete(file: UploadFile= File(...)):
+    file.filename = f"{IMAGEDIR}{file.filename}"
+    content = await file.read()
+    
+    # Save the file in server
+    with open(file.filename, "wb") as f:
+        f.write(content)
+    # Upload the file to S3
+    s3 = S3Services()
+    image_url = s3.upload_image(file.filename)
+    # Update task's justifyimage field with the image URL
+    task = await db["take_task"].find_one({"taskID": taketask_queue[0].taskID})
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task = await db["take_task"].update_one(
+        {"taskID": taketask_queue[0].taskID},
+        {"$set": {"justifyimage": image_url}})
+    # haystack two image in taketask and upload to s3
+    # then return url
+    img1 = cv2.imread(taketask_queue[0].init_image)
+    img2 = cv2.imread(taketask_queue[0].justifyimage)
+    img = stack_images(img1, img2)
+    img_path = f'{unique_id}_stacked_image.jpg'
+    url = self.s3.upload_image(img_path)  
+    
 
+    return {"filename": file.filename}
+    
+
+@app.get("/getfiles/", response_description="List all images in directory")
+async def list_files():
+    try:
+        files = os.listdir(IMAGEDIR)
+        image_files = [file for file in files if file.endswith((".jpg", ".jpeg", ".png"))]
+        return {"images": image_files}
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Image directory not found or check your directory path!")
