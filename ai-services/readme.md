@@ -1,5 +1,6 @@
 # Read before go to AI services 
 -----
+# !!!ai_config.yaml!!! provided for judging.
 
 ### To use these services you need to create 'ai_config.yaml' file have format and attributes like below: 
 ```YAML
@@ -32,3 +33,4 @@ result = await img_text.get_result('Lift all box to floor 7', 'https://keeper-st
 print(result)
 ```
 ## Enjoy!!!!
+

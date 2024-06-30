@@ -1,0 +1,12 @@
+{
+  's3': {
+    'key': 'AKIATCKAMVAZJSJZWGWL',
+    'secret_key': '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',
+    'region_name': 'ap-southeast-1' 
+  },
+  'flow': {
+    'api_key': 'qqr_16505d26c9a653c8b31bd713438969656aa2b04bf64586e296b3d635ff62462e1604c1fc4081995667b356daad3e5b3c',
+    'workflow_id': '1c9fed59-dc11-47af-8678-73131c9dfcc7',
+    'base_url': 'https://api.workflowchef.ai'
+  }
+}
