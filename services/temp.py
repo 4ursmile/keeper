@@ -12,7 +12,8 @@ import dtdef as dt
 import os
 import queue
 import asyncio
-
+import boto3
+from tempfile import NamedTemporaryFile
 class ReviewCreate(BaseModel):
     rate: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
     comment: Optional[str] = Field(None, description="Optional comment from the user")
@@ -25,21 +26,6 @@ class ReviewInDB(BaseModel):
     comment: Optional[str]
     Type: bool
     giverID: int
-
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid objectid")
-        return ObjectId(v)
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema):
-        field_schema.update(type="string")
 
 class Address(BaseModel):
     country: str
@@ -307,17 +293,7 @@ async def update_user_status(user_id:int, status: bool, receiver_id: int, item: 
 givetask_collection = db.get_collection("givetask")
 
 # Define models
-class Location(BaseModel):
-    longitude: float
-    latitude: float
-    note: Optional[str]
 
-class TaskCreate(BaseModel):
-    images: str
-    description: str
-    location: Location
-    gmv: float
-    discount: float
 
 class Location2(BaseModel):
     country: str
@@ -338,23 +314,43 @@ class TaskCreate2(BaseModel):
     giveruserID: int
     note: Optional[str]
 
+class Location(BaseModel):
+    longitude: float
+    latitude: float
+    note: str
+
+class TaskCreate(BaseModel):
+    images: str
+    description: str
+    location: Location
+    gmv: float
+    discount: float
 giver_queue = []
 # Example endpoint to create a task
+
+
 @app.post("/users/{user_id}/tasks/", response_description="Create a task", response_model=TaskCreate)
-async def create_task(user_id: int, user_note:str , task: TaskCreate = Body()):
+async def create_task(user_id: int, user_note: str, file: UploadFile = File(...), task: TaskCreate = Body()):
     # Fetch user details from the database based on giveruserID
-    global taker_queue
     user = await users_collection.find_one({"id": user_id})
     if user is None:
         raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
-    
-    # Prepare task data with user's address details
+
+    # Upload image to S3
+    with NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(await file.read())
+        tmp_file.flush()
+        file_key = f"{user_id}/{file.filename}"
+        s3_client.upload_file(tmp_file.name, 'your-bucket-name', file_key)
+
+    # Prepare task data with user's address details and S3 URL
     task_id = await givetask_collection.count_documents({}) + 1  # Automatically generate taskID
     while await givetask_collection.find_one({"taskID": task_id}):  # Ensure no duplicate taskID
         task_id += 1
+
     task_data = {
         "taskID": task_id,
-        "images": task.images,
+        "images": f"https://your-bucket-name.s3.amazonaws.com/{file_key}",
         "description": task.description,
         "location": {
             "country": user["address"]["country"],
@@ -370,13 +366,15 @@ async def create_task(user_id: int, user_note:str , task: TaskCreate = Body()):
         "giveruserID": user_id,
         "note": user_note
     }
+
     giver_queue.append(task_data)
+
     # Insert task into givetask collection
     new_task = await givetask_collection.insert_one(task_data)
-    
+
     # Fetch and return the created task document
     created_task = await givetask_collection.find_one({"_id": new_task.inserted_id})
-    return created_task 
+    return created_task
 
 @app.put("/tasks/complete", response_description="Complete task")
 async def complete_task(confirm: bool):
