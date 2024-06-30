@@ -94,6 +94,7 @@ from fastapi.responses import JSONResponse
 # get file from fastapi
 IMAGEDIR = "../images/"
 
+
 @app.get("/getfiles/", response_description="List all images in directory")
 async def list_files():
     try:
@@ -120,6 +121,12 @@ async def create_upload_file(file: UploadFile= File(...)):
         f.write(content)
     return {"filename": file.filename}
 
+@app.get("/users/email", response_description="Get a single user", response_model=UserInDB)
+async def read_user(email: EmailStr):
+    user = await db["users"].find_one({"email": email})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 # CRUD for user behavior
 @app.post("/users/", response_description="Add new user", response_model=UserInDB)
 async def create_user(user: UserCreate):
@@ -128,6 +135,8 @@ async def create_user(user: UserCreate):
         raise HTTPException(status_code=400, detail="Username already exists")
     
     user_id = await users_collection.count_documents({}) + 1
+    while await users_collection.find_one({"id": user_id}):  # Ensure no duplicate ID
+        user_id += 1
     user_dict = user.dict()
     user_dict.update({
         "id": user_id,
@@ -141,6 +150,7 @@ async def create_user(user: UserCreate):
     created_user = await db["users"].find_one({"_id": new_user.inserted_id})
     created_user["id"] = user_id
     return created_user
+
 
 
 @app.put("/users/{user_id}", response_description="Update a user", response_model=UserInDB)
@@ -261,6 +271,7 @@ class QueueItem(BaseModel):
 taker_queue = []
 
 
+    
 @app.put("/users/{user_id}/status", response_description="Update user status")
 async def update_user_status(user_id:int, status: bool, receiver_id: int, item: QueueItem=Body(...)):
     global taker_queue  # Make taker_queue global to access and modify it
@@ -308,6 +319,25 @@ class TaskCreate(BaseModel):
     gmv: float
     discount: float
 
+class Location2(BaseModel):
+    country: str
+    city: str
+    district: str
+    ward: str
+    longitude: float
+    latitude: float
+    note: Optional[str]
+
+class TaskCreate2(BaseModel):
+    taskID: int
+    images: str
+    description: str
+    location: Location2
+    gmv: float
+    discount: float
+    giveruserID: int
+    note: Optional[str]
+
 giver_queue = []
 # Example endpoint to create a task
 @app.post("/users/{user_id}/tasks/", response_description="Create a task", response_model=TaskCreate)
@@ -320,6 +350,8 @@ async def create_task(user_id: int, user_note:str , task: TaskCreate = Body()):
     
     # Prepare task data with user's address details
     task_id = await givetask_collection.count_documents({}) + 1  # Automatically generate taskID
+    while await givetask_collection.find_one({"taskID": task_id}):  # Ensure no duplicate taskID
+        task_id += 1
     task_data = {
         "taskID": task_id,
         "images": task.images,
@@ -346,6 +378,49 @@ async def create_task(user_id: int, user_note:str , task: TaskCreate = Body()):
     created_task = await givetask_collection.find_one({"_id": new_task.inserted_id})
     return created_task 
 
+@app.put("/tasks/complete", response_description="Complete task")
+async def complete_task(confirm: bool):
+    global taketask_queue
+    
+    if not taketask_queue:
+        raise HTTPException(status_code=404, detail="No tasks in queue")
+    
+    task = taketask_queue[0]
+    
+    if confirm:
+        taketask_queue[0].status = "Completed"
+        taketask_queue[0].completed_time = datetime.now()
+        
+        # Create and store transaction
+        transaction = Transaction(
+            sender_id=task.giverID,
+            receiver_id=task.takerID,
+            amount=task.gmv,
+            time=datetime.now(),
+            status=True  # Assuming 'True' indicates completed status
+        )
+        await db["transactions"].insert_one(transaction.dict())
+        
+        db["take_task"].insert_one(taketask_queue[0])
+        return {"message": "Task completion processed"}
+    else:
+        taketask_queue[0].status = "Canceled"
+        taketask_queue[0].completed_time = datetime.now()
+        
+        # Create and store transaction for cancellation
+        transaction = Transaction(
+            sender_id=task.giverID,
+            receiver_id=task.takerID,
+            amount=task.gmv,
+            time=datetime.now(),
+            status=False  # Assuming 'False' indicates canceled status
+        )
+        await db["transactions"].insert_one(transaction.dict())
+        
+        db["take_task"].insert_one(taketask_queue[0])
+        taketask_queue.append(taketask_queue.pop(0))
+        return {"message": "Task completion cancelled"}
+
 # last event take task 
 taketask_queue=[]
 class TakeTask(BaseModel):
@@ -358,8 +433,11 @@ class TakeTask(BaseModel):
     note: str
     take_time: datetime
     arrive_time: Optional[datetime] = None
-    commit_time: Optional[datetime] = None
     completed_time: Optional[datetime] = None
+
+@app.get("/users/tasks/", response_description="List all tasks", response_model=List[TaskCreate2])
+async def list_tasks():
+    return giver_queue
 
 @app.put("/tasks/accept", response_description="Accept or reject task")
 async def accept_task(accept_status: bool, taker_id: int):
@@ -389,10 +467,68 @@ async def accept_task(accept_status: bool, taker_id: int):
         giver_queue.pop(0)
     else:
         taker_queue.append(taker_queue.pop(0))
-        
-
     return {"message": "Task acceptance processed"}
 
+## done
+@app.put("/tasks/arrive", response_description="Arrive at task location")
+async def arrive_task(confirm: bool):
+    global taketask_queue
+    if not taketask_queue:
+        raise HTTPException(status_code=404, detail="No tasks in queue")
+    
+    task = taketask_queue[0]
+    if confirm:
+        taketask_queue[0].status = "In Progress"
+        taketask_queue[0].arrive_time = datetime.now()
+        return {"message": "Arrival processed"}
+    else: 
+        taketask_queue[0].status = "Canceled"
+        taketask_queue[0].completed_time = datetime.now()
+        taketask_queue[0].arrive_time = datetime.now()
+        db["take_task"].insert_one(taketask_queue[0])
+        taketask_queue.append(taketask_queue.pop(0))
+        return {"message": "Arrival cancelled"}
+    
+class Transaction(BaseModel):
+    sender_id: int
+    receiver_id: int
+    amount: float
+    currency: str = "VND"
+    time: datetime
+    status: bool
 
+@app.put("/tasks/complete", response_description="Complete task")
+async def complete_task(confirm: bool):
+    global taketask_queue
+    
+    if not taketask_queue:
+        raise HTTPException(status_code=404, detail="No tasks in queue")
+    
+    task = taketask_queue[0]
+    
+    if confirm:
+        taketask_queue[0].status = "Completed"
+        taketask_queue[0].completed_time = datetime.now()
+        
+        # Create and store transaction
+        transaction = Transaction(
+            sender_id=task.giverID,
+            receiver_id=task.takerID,
+            amount=task.gmv,
+            time=datetime.now(),
+            status=False  # False mean haven't paid yet
+        )
+        await db["transactions"].insert_one(transaction.dict())
+        await db["take_task"].insert_one(taketask_queue[0])
 
+        return {"message": "Task completion processed"}
+    else:
+        taketask_queue[0].status = "Canceled"
+        taketask_queue[0].completed_time = datetime.now()
+        
+        
+        await db["take_task"].insert_one(taketask_queue[0])
+        taketask_queue.append(taketask_queue.pop(0))
+        return {"message": "Task completion cancelled"}
+    
 
