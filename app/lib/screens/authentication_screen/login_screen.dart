@@ -3,6 +3,8 @@ import 'package:flutter_application_1/screens/tab_screens.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_application_1/constants/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -26,18 +28,44 @@ class _LoginScreenState extends State<LoginScreen> {
     String email = emailController.text;
     String password = passwordController.text;
 
-    // Perform your login logic here
-    // If login is successful, store the credentials
+    // Get the value from backend
+    try {
+      String bassedUrl = "https://3acb-101-53-1-124.ngrok-free.app";
+      String request = '$bassedUrl/users/email?email=$email';
+      var response = await http.get(Uri.parse(request));
+      var data = json.decode(response.body);
+      print('--> Data is $data');
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('email', email);
-    await prefs.setString('password', password);
+      if (response.statusCode == 200) {
+        // Save the response data to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('id', data['id']);
+        // await prefs.setString('name', data['name']);
+        // await prefs.setString('email', data['email']);
+        // await prefs.setString('phone', data['phone']);
+        // await prefs.setString('country', data['address']['country']);
+        // await prefs.setString('city', data['address']['city']);
+        // await prefs.setString('district', data['address']['district']);
+        // await prefs.setString('ward', data['address']['ward']);
+        await prefs.setString('username', data['username']);
+        // await prefs.setDouble('rating', data['rating']);
+        // await prefs.setDouble('balance', data['balance']);
 
-    // Navigate to the TabScreens
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const TabScreens()),
-    );
+        // Also store the credentials if needed
+        await prefs.setString('email', email);
+        await prefs.setString('password', password);
+
+        // Navigate to the TabScreens
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const TabScreens()),
+        );
+      } else {
+        throw Exception("Failed to load data");
+      }
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   @override

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'dart:ui' as ui;
 import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +12,51 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/screens/map_screen/task_request_modal.dart';
+
+class Task {
+  final int taskID;
+  final String images;
+  final String description;
+  final Map<String, dynamic> location;
+  final double gmv;
+  final double discount;
+  final int giveruserID;
+  final String note;
+
+  Task({
+    required this.taskID,
+    required this.images,
+    required this.description,
+    required this.location,
+    required this.gmv,
+    required this.discount,
+    required this.giveruserID,
+    required this.note,
+  });
+
+  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const int earthRadius = 6371; // in kilometers
+    double dLat = _toRadians(lat2 - lat1);
+    double dLon = _toRadians(lon2 - lon1);
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    double distance = earthRadius * c;
+    return distance;
+  }
+
+  double _toRadians(double degree) {
+    return degree * (math.pi / 180);
+  }
+}
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -40,6 +85,7 @@ class _MapScreenState extends State<MapScreen> {
     getLocationUpdates().then((_) {
       _addInitialMarker();
       loadData();
+      fetchAndProcessTasks();
     });
     rootBundle.loadString('assets/daymode.json').then((string) {
       _mapStyle = string;
@@ -94,7 +140,7 @@ class _MapScreenState extends State<MapScreen> {
   ];
 
   List<LatLng> _latLang = [
-    LatLng(37.665532, -121.803044),
+    LatLng(37.4235928491356, -122.08579980556917),
     LatLng(37.662816, -121.811789),
     LatLng(37.657648, -121.800465),
     LatLng(37.667943, -121.799577),
@@ -103,6 +149,69 @@ class _MapScreenState extends State<MapScreen> {
   ];
 
   loadData() async {
+    // get user id from shared preferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? takerId = prefs.getInt('id');
+
+    // // Get the task requests
+    // try {
+    //   String bassedUrl = "https://3acb-101-53-1-124.ngrok-free.app";
+    //   String request = '$bassedUrl/users/tasks/';
+    //   var response = await http.get(Uri.parse(request));
+    //   print('--> Response is ${response.body}');
+      
+      
+
+    //   if (response.statusCode == 200) {
+    //     var tasksData = json.decode(response.body) as List<dynamic>;
+
+    //     List<Task> tasks = tasksData.map((taskData) {
+    //       return Task(
+    //         taskID: taskData['taskID'],
+    //         images: taskData['images'],
+    //         description: taskData['description'],
+    //         location: taskData['location'],
+    //         gmv: taskData['gmv'].toDouble(),
+    //         discount: taskData['discount'].toDouble(),
+    //         giveruserID: taskData['giveruserID'],
+    //         note: taskData['note'],
+    //       );
+    //     }).toList();
+
+    //     double userLatitude = _currentP!.latitude; // Example user's latitude
+    //     double userLongitude = -_currentP!.longitude; // Example user's longitude
+
+    //     // Find task with minimum distance
+    //     Task? minDistanceTask;
+    //     double minDistance = double.infinity;
+
+    //     for (Task task in tasks) {
+    //       double taskLat = task.location['latitude'];
+    //       double taskLon = task.location['longitude'];
+    //       double distance = task.calculateDistance(
+    //           userLatitude, userLongitude, taskLat, taskLon);
+
+    //       if (distance < minDistance) {
+    //         minDistance = distance;
+    //         minDistanceTask = task;
+    //       }
+    //     }
+
+    //     // Output the task with the minimum distance
+    //     if (minDistanceTask != null) {
+    //       print(
+    //           '-->Task ID ${minDistanceTask.taskID} has the minimum distance of $minDistance kilometers.');
+    //     } else {
+    //       print('No tasks found.');
+    //     }
+    //   } else {
+    //     throw Exception(
+    //         "Failed to load data. Status code: ${response.statusCode}");
+    //   }
+    // } catch (e) {
+    //   print('Error: ${e.toString()}');
+    // }
+
     for (int i = 0; i < images.length; i++) {
       Uint8List? image = await _loadNetworkImage('assets/icons/point.png');
 
@@ -214,15 +323,6 @@ class _MapScreenState extends State<MapScreen> {
           } else {
             return Stack(
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) => CustomDialog(),
-                    );
-                  },
-                  child: Text('Show Dialog'),
-                ),
                 GoogleMap(
                   onTap: (position) {
                     _customInfoWindowController.hideInfoWindow!();
@@ -257,7 +357,6 @@ class _MapScreenState extends State<MapScreen> {
                         }
                       : {},
                 ),
-                
                 CustomInfoWindow(
                   controller: _customInfoWindowController,
                   height: 200,
@@ -272,6 +371,67 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Future<void> fetchAndProcessTasks() async {
+    try {
+      String baseUrl = "https://3acb-101-53-1-124.ngrok-free.app";
+      String request = '$baseUrl/users/tasks/';
+      var response = await http.get(Uri.parse(request));
+
+      if (response.statusCode == 200) {
+        var tasksData = await json.decode(response.body) as List<dynamic>;
+
+        print('--> Tasks Response is ${response.body}');
+
+        List<Task> tasks = await tasksData.map((taskData) {
+          return Task(
+            taskID: taskData['taskID'],
+            images: taskData['images'],
+            description: taskData['description'],
+            location: taskData['location'],
+            gmv: taskData['gmv'].toDouble(),
+            discount: taskData['discount'].toDouble(),
+            giveruserID: taskData['giveruserID'],
+            note: taskData['note'],
+          );
+        }).toList();
+
+        print('-->Current P is $_currentP');
+        // Ensure _currentP is not null before using it
+        if (_currentP != null) {
+          // Find task with minimum distance
+          Task? minDistanceTask;
+          double minDistance = double.infinity;
+
+          
+
+          for (Task task in tasks) {
+            double taskLat = task.location['latitude'];
+            double taskLon = task.location['longitude'];
+            double distance = task.calculateDistance(
+                _currentP!.latitude, _currentP!.longitude, taskLat, taskLon);
+
+            if (distance < minDistance) {
+              minDistance = distance;
+              minDistanceTask = task;
+            }
+          }
+
+          // Output the task with the minimum distance
+          if (minDistanceTask != null) {
+            print(
+                '-->Task ID ${minDistanceTask.taskID} has the minimum distance of $minDistance kilometers.');
+          } else {
+            print('No tasks found.');
+          }
+        }
+      } else {
+        throw Exception(
+            "Failed to load data. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print('Error: ${e.toString()}');
+    }
+  }
   Future<void> _cameraToPosition(LatLng pos) async {
     final GoogleMapController controller = await _mapController.future;
     CameraPosition _newCameraPosition = CameraPosition(target: pos, zoom: 16);
@@ -306,7 +466,7 @@ class _MapScreenState extends State<MapScreen> {
             LatLng(currentLocation.latitude!, currentLocation.longitude!);
         print(
             '_currentP ${currentLocation.latitude!}, ${currentLocation.longitude!}');
-        _cameraToPosition(_currentP!);
+        // _cameraToPosition(_currentP!);
         _addInitialMarker();
       }
     });

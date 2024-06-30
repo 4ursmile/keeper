@@ -4,10 +4,13 @@ import 'package:flutter_application_1/screens/tab_screens.dart';
 import 'package:flutter_application_1/screens/authentication_screen/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
   await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
