@@ -94,7 +94,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               Text(
-                '\$1234.56', // Replace with your balance variable
+                '123.456', // Replace with your balance variable
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: Sizes.titleSize, 

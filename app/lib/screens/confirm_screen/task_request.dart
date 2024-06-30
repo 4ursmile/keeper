@@ -65,7 +65,7 @@ class _ConfirmRequestScreenState extends State<ConfirmRequestScreen> {
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: Text(widget.task.description),
+                      child: Text(widget.task.description!),
                     ),
                     const SizedBox(height: 20),
                     Text('Location',
@@ -74,7 +74,7 @@ class _ConfirmRequestScreenState extends State<ConfirmRequestScreen> {
                     const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
-                      child: Text(widget.task.location.note),
+                      child: Text(widget.task.location!.note!),
                     ),
                     const SizedBox(height: 20),
                     Text('Number of Takers',
