@@ -18,6 +18,9 @@ import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/screens/map_screen/task_request_modal.dart';
 
+
+var taskLength = 0;
+
 class Task {
   final int taskID;
   final String images;
@@ -58,6 +61,9 @@ class Task {
   }
 }
 
+// Save list class tasks
+List<Task> globalTasks = [];
+
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -85,7 +91,7 @@ class _MapScreenState extends State<MapScreen> {
     getLocationUpdates().then((_) {
       _addInitialMarker();
       loadData();
-      fetchAndProcessTasks();
+      
     });
     rootBundle.loadString('assets/daymode.json').then((string) {
       _mapStyle = string;
@@ -153,68 +159,16 @@ class _MapScreenState extends State<MapScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int? takerId = prefs.getInt('id');
 
-    // // Get the task requests
-    // try {
-    //   String bassedUrl = "https://3acb-101-53-1-124.ngrok-free.app";
-    //   String request = '$bassedUrl/users/tasks/';
-    //   var response = await http.get(Uri.parse(request));
-    //   print('--> Response is ${response.body}');
-      
-      
+    // get tasks 
+    fetchAndProcessTasks();
+ 
+    // get task length from task list
+    
+    
 
-    //   if (response.statusCode == 200) {
-    //     var tasksData = json.decode(response.body) as List<dynamic>;
-
-    //     List<Task> tasks = tasksData.map((taskData) {
-    //       return Task(
-    //         taskID: taskData['taskID'],
-    //         images: taskData['images'],
-    //         description: taskData['description'],
-    //         location: taskData['location'],
-    //         gmv: taskData['gmv'].toDouble(),
-    //         discount: taskData['discount'].toDouble(),
-    //         giveruserID: taskData['giveruserID'],
-    //         note: taskData['note'],
-    //       );
-    //     }).toList();
-
-    //     double userLatitude = _currentP!.latitude; // Example user's latitude
-    //     double userLongitude = -_currentP!.longitude; // Example user's longitude
-
-    //     // Find task with minimum distance
-    //     Task? minDistanceTask;
-    //     double minDistance = double.infinity;
-
-    //     for (Task task in tasks) {
-    //       double taskLat = task.location['latitude'];
-    //       double taskLon = task.location['longitude'];
-    //       double distance = task.calculateDistance(
-    //           userLatitude, userLongitude, taskLat, taskLon);
-
-    //       if (distance < minDistance) {
-    //         minDistance = distance;
-    //         minDistanceTask = task;
-    //       }
-    //     }
-
-    //     // Output the task with the minimum distance
-    //     if (minDistanceTask != null) {
-    //       print(
-    //           '-->Task ID ${minDistanceTask.taskID} has the minimum distance of $minDistance kilometers.');
-    //     } else {
-    //       print('No tasks found.');
-    //     }
-    //   } else {
-    //     throw Exception(
-    //         "Failed to load data. Status code: ${response.statusCode}");
-    //   }
-    // } catch (e) {
-    //   print('Error: ${e.toString()}');
-    // }
-
-    for (int i = 0; i < images.length; i++) {
+    for (int i = 0; i < globalTasks.length; i++) {
       Uint8List? image = await _loadNetworkImage('assets/icons/point.png');
-
+      print('--> globalTasks[i].location ${globalTasks[i].location}');
       final ui.Codec markerImageCodec = await instantiateImageCodec(
         image!.buffer.asUint8List(),
         targetHeight: 100,
@@ -225,10 +179,15 @@ class _MapScreenState extends State<MapScreen> {
         format: ImageByteFormat.png,
       );
 
+      var markerPosition = LatLng(
+        globalTasks[i].location['latitude'],
+        globalTasks[i].location['longitude'],
+      );
+
       final Uint8List resizedMarkerImageBytes = byteData!.buffer.asUint8List();
       _markers.add(Marker(
         markerId: MarkerId(i.toString()),
-        position: _latLang[i],
+        position: markerPosition,
         icon: BitmapDescriptor.fromBytes(resizedMarkerImageBytes),
         anchor: Offset(.1, .1),
         // infoWindow: InfoWindow(title: 'This is title marker: ' + i.toString(),),
@@ -395,6 +354,9 @@ class _MapScreenState extends State<MapScreen> {
           );
         }).toList();
 
+        globalTasks = tasks;
+        taskLength = tasks.length;
+
         print('-->Current P is $_currentP');
         // Ensure _currentP is not null before using it
         if (_currentP != null) {
@@ -415,6 +377,7 @@ class _MapScreenState extends State<MapScreen> {
               minDistanceTask = task;
             }
           }
+
 
           // Output the task with the minimum distance
           if (minDistanceTask != null) {
@@ -466,7 +429,7 @@ class _MapScreenState extends State<MapScreen> {
             LatLng(currentLocation.latitude!, currentLocation.longitude!);
         print(
             '_currentP ${currentLocation.latitude!}, ${currentLocation.longitude!}');
-        // _cameraToPosition(_currentP!);
+        _cameraToPosition(_currentP!);
         _addInitialMarker();
       }
     });
