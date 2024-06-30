@@ -1,7 +1,8 @@
 boto3
 pillow
 requests
-torch torchvision
+torch 
+torchvision
 transformers
 numpy
 opencv-python
