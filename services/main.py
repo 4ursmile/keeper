@@ -20,6 +20,8 @@ from structure import (
     UserInDB, QueueItem, Location2, TaskCreate2, Location, 
     TaskCreate, TakeTask, Transaction
 )
+# Running app command line
+# python -m uvicorn main:app --reload --port 5000
 
 # Set up the FastAPI app
 IMAGEDIR = "../images/"
