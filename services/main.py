@@ -13,75 +13,43 @@ import os
 import queue
 import asyncio
 import boto3
+import cv2
 
-class ReviewCreate(BaseModel):
-    rate: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
-    comment: Optional[str] = Field(None, description="Optional comment from the user")
-    giverID: int
+from structure import (
+    ReviewCreate, ReviewInDB, Address, UserCreate, UserUpdate,
+    UserInDB, QueueItem, Location2, TaskCreate2, Location, 
+    TaskCreate, TakeTask, Transaction
+)
 
-class ReviewInDB(BaseModel):
-    ReviewID: int
-    rate: int
-    Date: datetime
-    comment: Optional[str]
-    Type: bool
-    giverID: int
-
-class Address(BaseModel):
-    country: str
-    city: str
-    district: str
-    ward: str
-
-class UserCreate(BaseModel):
-    name: str
-    email: EmailStr
-    phone: str
-    address: Address
-    username: str
-    password: str
-
-class UserUpdate(BaseModel):
-    name: Optional[str]
-    email: Optional[EmailStr]
-    phone: Optional[str]
-    address: Optional[Address]
-    password: Optional[str]
-
-class UserInDB(BaseModel):
-    id: int
-    name: str
-    email: EmailStr
-    phone: str
-    address: Address
-    username: str
-    rating: float = 0
-    balance: float = 0
-    reviewID: Optional[List[int]] = []
-    transaction_history: Optional[List[str]] = []
-
-#get
-
-# mongodb connection
-from motor.motor_asyncio import AsyncIOMotorClient
-from fastapi import FastAPI, HTTPException, Depends
-import urllib.parse
-
-
+# Set up the FastAPI app
+IMAGEDIR = "../images/"
+app = FastAPI()
+# Set up the MongoDB client
 MONGO_DETAILS = "mongodb+srv://lethanhminh0801:"+urllib.parse.quote('Minh@8@12@@3')+"@keeper.r1k11kt.mongodb.net/?retryWrites=true&w=majority&appName=keeper"
 client = AsyncIOMotorClient(MONGO_DETAILS)
 db = client.users_db
 users_collection = db.get_collection("users")
+reviews_collection = db.get_collection("reviews")
+givetask_collection = db.get_collection("givetask")
+taker_queue = []
+giver_queue = []
+taketask_queue = []
 
-app = FastAPI()
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+# Set up the S3 client
+{
+  's3': {
+    'key': 'AKIATCKAMVAZJSJZWGWL',
+    'secret_key': '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',
+    'region_name': 'ap-southeast-1' 
+  },
+  'flow': {
+    'api_key': 'qqr_16505d26c9a653c8b31bd713438969656aa2b04bf64586e296b3d635ff62462e1604c1fc4081995667b356daad3e5b3c',
+    'workflow_id': '1c9fed59-dc11-47af-8678-73131c9dfcc7',
+    'base_url': 'https://api.workflowchef.ai'
+  }
+}
 
-# get file from fastapi
-IMAGEDIR = "../images/"
-
-
-@app.get("/getfiles/", response_description="List all images in directory")
+@app.get("/getallfiles/", response_description="List all images in directory")
 async def list_files():
     try:
         files = os.listdir(IMAGEDIR)
@@ -90,7 +58,7 @@ async def list_files():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Image directory not found or check your directory path!")
 
-@app.get("/getfile1/")
+@app.get("/getfile/")
 async def read_file(name: str = "default.jpg"):
     files= os.listdir(IMAGEDIR)
     path = f"{IMAGEDIR}{name}"
@@ -181,24 +149,6 @@ async def get_balance(user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
     return {"balance": user["balance"]}
 ### CRUD for review behavior    
-
-reviews_collection = db.get_collection("reviews")
-
-async def updating_rating(user_id: int, new_rate: int):
-    user = await users_collection.find_one({"id": user_id})
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    rating = user["rating"]
-    reviewID = user["reviewID"]
-    rating = (rating*len(reviewID) + new_rate) / (len(reviewID) + 1)
-    updated_user = await users_collection.update_one(
-        {"id": user_id},
-        {"$set": {"rating": rating}}
-    )
-    return rating
-#### Reviews event
-
-
 @app.post("/reviews/", response_description="Submit a review", response_model=ReviewInDB)
 async def create_review(review: ReviewCreate = Body(...), receiver_id: int = Body(..., embed=True)):
     print("Start Create_review")
@@ -225,10 +175,6 @@ async def create_review(review: ReviewCreate = Body(...), receiver_id: int = Bod
     new_rating = ((rating*len(reviewID) + review_dict["rate"]) / (len(reviewID) + 1))
     print(f"Lan luot la: {rating},{len(reviewID)},{review_dict['rate']}")
     
-
-
-    
-
     # Update receiver's reviewID
     update_result = await users_collection.update_one(
         {"id": receiver_id},
@@ -237,7 +183,6 @@ async def create_review(review: ReviewCreate = Body(...), receiver_id: int = Bod
             "$set": {"rating": new_rating}
         }
     )
-    
     
     if update_result.modified_count == 0:
         raise HTTPException(status_code=404, detail=f"User with ID {receiver_id} not found")
@@ -248,16 +193,6 @@ async def create_review(review: ReviewCreate = Body(...), receiver_id: int = Bod
     created_review = await reviews_collection.find_one({"_id": new_review.inserted_id})
     return created_review
 
-# Queue system events
-class QueueItem(BaseModel):
-    longitude: float
-    latitude: float
-
-
-taker_queue = []
-
-
-    
 @app.put("/users/{user_id}/status", response_description="Update user status")
 async def update_user_status(user_id:int, status: bool, receiver_id: int, item: QueueItem=Body(...)):
     global taker_queue  # Make taker_queue global to access and modify it
@@ -288,45 +223,6 @@ async def update_user_status(user_id:int, status: bool, receiver_id: int, item: 
         print(item)
 
     return {"message": f"User status updated in queue"}
-
-#givetask event 
-givetask_collection = db.get_collection("givetask")
-
-# Define models
-
-
-class Location2(BaseModel):
-    country: str
-    city: str
-    district: str
-    ward: str
-    longitude: float
-    latitude: float
-    note: Optional[str]
-
-class TaskCreate2(BaseModel):
-    taskID: int
-    images: str
-    description: str
-    location: Location2
-    gmv: float
-    discount: float
-    giveruserID: int
-    note: Optional[str]
-
-class Location(BaseModel):
-    longitude: float
-    latitude: float
-    note: str
-
-class TaskCreate(BaseModel):
-    images: str
-    description: str
-    location: Location
-    gmv: float
-    discount: float
-giver_queue = []
-# Example endpoint to create a task
 
 @app.post("/users/{user_id}/download/")
 async def read_file(name: str = "default.jpg"):
@@ -510,15 +406,6 @@ async def arrive_task(confirm: bool):
         db["take_task"].insert_one(taketask_queue[0])
         taketask_queue.append(taketask_queue.pop(0))
         return {"message": "Arrival cancelled"}
-    
-class Transaction(BaseModel):
-    sender_id: int
-    receiver_id: int
-    amount: float
-    currency: str = "VND"
-    time: datetime
-    status: bool
-
 
 @app.put("/tasks/complete", response_description="Complete task")
 async def complete_task(confirm: bool):
@@ -582,13 +469,3 @@ async def upload_image_when_complete(file: UploadFile= File(...)):
     
 
     return {"filename": file.filename}
-    
-
-@app.get("/getfiles/", response_description="List all images in directory")
-async def list_files():
-    try:
-        files = os.listdir(IMAGEDIR)
-        image_files = [file for file in files if file.endswith((".jpg", ".jpeg", ".png"))]
-        return {"images": image_files}
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Image directory not found or check your directory path!")
