@@ -2,6 +2,12 @@
 -----
 # !!!ai_config.yaml!!! provided for judging.
 
+First you need install requirements
+```shell
+pip install -r requirements.txt
+```
+
+
 ### To use these services you need to create 'ai_config.yaml' file have format and attributes like below: 
 ```YAML
 {
