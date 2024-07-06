@@ -3,11 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_application_1/navigation/nav_models.dart';
 import 'package:flutter_application_1/screens/map_screen/map_screen.dart';
-import 'package:flutter_application_1/screens/task_screen/task_screen.dart';
+
+import 'package:flutter_application_1/screens/temp.dart';
+import 'package:flutter_application_1/screens/temp2.dart';
+import 'package:fl_geocoder/fl_geocoder.dart';
+
+import 'package:flutter_application_1/screens/tracking_screen/task_screen.dart';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'package:flutter_application_1/constants/colors.dart';
+
+
 
 import '../navigation/nav_bar.dart';
 import '../navigation/tab_page.dart';
+import 'confirm_screen/confirm_screen.dart';
 import 'main_screen/main_screen.dart';
+import 'newfeed_screen/newfeed_screen.dart';
+import 'profile_screen/profile_screen.dart';
 
 class TabScreens extends StatefulWidget {
   const TabScreens({super.key});
@@ -23,17 +37,18 @@ class _TabScreensState extends State<TabScreens> {
   final profileNavKey = GlobalKey<NavigatorState>();
   int selectedTab = 0;
   List<NavModel> items = [];
-
+  late FlGeocoder geocoder;
   @override
   void initState() {
     super.initState();
+    geocoder = FlGeocoder(dotenv.env["MAP_API_KEY"]!);
     items = [
       NavModel(
         page: const MainScreen(),
         navKey: homeNavKey,
       ),
       NavModel(
-        page: const TabPage(tab: 2),
+        page: NewFeedScreen(),
         navKey: searchNavKey,
       ),
       NavModel(
@@ -41,7 +56,7 @@ class _TabScreensState extends State<TabScreens> {
         navKey: notificationNavKey,
       ),
       NavModel(
-        page: const TabPage(tab: 4),
+        page: const ProfileScreen(),
         navKey: profileNavKey,
       ),
     ];
@@ -69,7 +84,7 @@ class _TabScreensState extends State<TabScreens> {
           height: 64,
           width: 64,
           child: FloatingActionButton(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.primaryColor,
             elevation: 0,
             onPressed: () {
               Navigator.push(
@@ -77,14 +92,15 @@ class _TabScreensState extends State<TabScreens> {
                 MaterialPageRoute(builder: (context) => const MapScreen()));
             },
             shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 3, color: Colors.green),
+              side: const BorderSide(width: 3, color: AppColors.primaryColor),
+              
               borderRadius: BorderRadius.circular(100),
             ),
             // child: const Icon(
             //   Icons.add,
             //   color: Colors.green,
             // ),
-            child: Image.asset('assets/icons/fav.png', color: Colors.green)
+            child: Image.asset('assets/icons/fav.png', color: Colors.white)
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_application_1/constants/colors.dart';
 
 class NavBar extends StatelessWidget {
   final int pageIndex;
@@ -63,7 +64,7 @@ class NavBar extends StatelessWidget {
         onTap: onTap,
         child: Image.asset(
           icon,
-          color: selected ? Colors.green : Colors.green.withOpacity(0.4),
+          color: selected ? AppColors.primaryColor : AppColors.primaryColor.withOpacity(0.4),
         ),
       ),
     );
